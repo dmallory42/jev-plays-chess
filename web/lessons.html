@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What Jev has learned · Jev plays chess</title>
+    <meta name="description" content="The lessons Jev has taken from its own games, and its record with each opening." />
+    <link rel="icon" href="/pieces/wN.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="wordmark" href="/">Jev plays chess</a>
+    </header>
+    <main class="learned">
+      <h1 class="learned-title">What Jev has learned</h1>
+      <p class="learned-intro" id="learned-intro">After every game, each of Jev's moves is filed under its kind and marked by whether it went wrong. Kinds that keep going wrong get flagged on Jev's options next time, and each opening line keeps a score.</p>
+
+      <section>
+        <h2 class="section-title">Moves it has learned to distrust</h2>
+        <ol class="pattern-list" id="pattern-list"><li class="empty">Loading…</li></ol>
+      </section>
+
+      <section>
+        <h2 class="section-title">Opening record</h2>
+        <div class="opening-cols">
+          <div>
+            <h3 class="opening-side"><span class="swatch w"></span>As White</h3>
+            <ol class="opening-list" id="openings-w"></ol>
+          </div>
+          <div>
+            <h3 class="opening-side"><span class="swatch b"></span>As Black</h3>
+            <ol class="opening-list" id="openings-b"></ol>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="colophon">
+      <a href="/">Watch live</a>
+      <a href="/how.html">How it works</a>
+    </footer>
+    <script type="module" src="/src/lessons.ts"></script>
+  </body>
+</html>

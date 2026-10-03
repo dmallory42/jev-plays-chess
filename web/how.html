@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How it works · Jev plays chess</title>
+    <meta name="description" content="How Jev picks its moves, who it plays against and how its rating is worked out." />
+    <link rel="icon" href="/pieces/wN.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="wordmark" href="/">Jev plays chess</a>
+    </header>
+    <article class="prose">
+      <h1>How it works</h1>
+
+      <p class="lede">
+        <a href="https://en.wikipedia.org/wiki/Jev_(AI_model)">Jev</a> is a decision model from TypeSafe AI. Show it a situation and a list of options and it returns a probability for each one, in a fraction of a second. It doesn't write text or reason step by step. This site asks how well that plays chess.
+      </p>
+
+      <div class="faq">
+        <details>
+          <summary>What does Jev see before each move?</summary>
+          <p>
+            A helper program lists every legal move with what it does right now: what it captures, whether it gives check, whether it wins or loses material once the trades on that square play out, which of Jev's pieces it leaves open to capture, which enemy pieces it attacks, and notes such as "develops a piece".
+          </p>
+          <p>
+            The moves are grouped as checkmate, wins material, safe or loses material, each with its net material result. The facts are the same either way, but laying them out like this made Jev about 245 rating points stronger in a 300-game test.
+          </p>
+          <p>
+            Jev also gets the board, the material count, the recent moves and a few general coaching tips. It never gets an engine's opinion, and nothing works out the opponent's replies for it. The choice is Jev's.
+          </p>
+        </details>
+
+        <details>
+          <summary>Who is it playing?</summary>
+          <p>
+            <a href="https://www.maiachess.com/">Maia-3</a>, a model from the University of Toronto trained on millions of games played by people on Lichess. Give it a rating and it plays like a human at that rating, typical mistakes included. That makes a fairer yardstick than a strong engine turned down on purpose.
+          </p>
+        </details>
+
+        <details>
+          <summary>How is the rating worked out?</summary>
+          <p>
+            Jev started at 1000. Each game is against Maia set to Jev's current rating, and Jev alternates between White and Black. After each game the rating moves by the standard Elo formula: a win or loss against an equal opponent is worth about 10 points. Over many games it settles where Jev wins about as often as it loses.
+          </p>
+          <p>
+            It's roughly comparable to a Lichess rating, because that's what Maia learned from, but it isn't official. During the first 30 games the steps are twice as big, so it finds its level quickly.
+          </p>
+        </details>
+
+        <details>
+          <summary>Does Jev learn from its games?</summary>
+          <p>
+            Yes. After each game, every move Jev played is filed by kind (the piece, whether it won or lost material, whether it landed on a square the opponent attacks, and the stage of the game) and marked as having gone wrong if it soon lost material or led to mate.
+          </p>
+          <p>
+            When a kind of move often goes wrong, matching options are flagged next time, for example "moves like this went wrong in 6 of your last 11 tries". Jev also sees how it has scored with each opening move. It all comes from its own games, and you can browse it on <a href="/lessons.html">What Jev has learned</a>.
+          </p>
+        </details>
+
+        <details>
+          <summary>When does a player resign?</summary>
+          <p>
+            Never before move 10. Alongside each move, Jev is asked whether its position is clearly lost, and it resigns if it answers 0.7 or higher on two turns in a row.
+          </p>
+          <p>
+            Maia resigns when its estimated chance of losing reaches 90% on two turns in a row. That estimate reflects how often real players at its rating lose from similar positions, so low-rated Maia plays on much longer, just as people do.
+          </p>
+        </details>
+
+        <details>
+          <summary>Why do moves appear every few seconds?</summary>
+          <p>
+            Both players choose in well under a second. The site plays slightly ahead and reveals the moves at a steady pace so the game is watchable. Just before Jev moves, its top options appear as arrows, thicker for the ones it favoured.
+          </p>
+        </details>
+
+        <details>
+          <summary>What is the bar beside the board?</summary>
+          <p>
+            Stockfish's view of the position, from a copy of the engine running in your browser. More white means White is better. It's only for viewers: Jev never sees it and it has no effect on the games.
+          </p>
+        </details>
+
+        <details>
+          <summary>What do the ?!, ? and ?? marks mean?</summary>
+          <p>
+            The same browser Stockfish rates each move by how much winning chance it gave up compared with the best move, using Lichess's thresholds: ?! for 10% or more, ? for 20% and ?? for 30%. A ! marks the only good move in a position, and !! a best move that gives up a piece.
+          </p>
+          <p>
+            Jev's options are rated too, from the position before it chose, so you can see when it gave real weight to a blunder.
+          </p>
+        </details>
+
+        <details>
+          <summary>Can I look back at earlier moves?</summary>
+          <p>
+            Click any move in the move list, or any finished game, to step through it. On Jev's moves you'll see every option it weighed as arrows. The arrow keys step through the moves, and Back to live returns to the game in progress.
+          </p>
+        </details>
+      </div>
+
+      <h2>Credits</h2>
+      <p>
+        Jev by <a href="https://typesafe.ai/">TypeSafe AI</a>. Maia-3 by the <a href="https://github.com/CSSLab/maia3">CSSLab at the University of Toronto</a>, running in <a href="https://github.com/dmallory42/maia3-ts">maia3-ts</a> (AGPL-3.0). Chess pieces by Colin M.L. Burnett (GPLv2+). Evaluation by Stockfish (GPLv3). Inspired by <a href="https://jev-pokemon.vercel.app/">Jev plays Pokémon</a>. This project is <a href="https://github.com/dmallory42/jev-plays-chess">open source</a> under the GPL-2.0 or later.
+      </p>
+    </article>
+  </body>
+</html>

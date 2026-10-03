@@ -1,0 +1,9 @@
+node_modules/
+.deploy/
+web/dist/
+.env
+.env.server
+.spacefast/
+web/public/stockfish/
+runs/
+web/public/maia3-5m.safetensors
