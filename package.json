@@ -3,12 +3,18 @@
   "private": true,
   "type": "module",
   "license": "GPL-2.0-or-later",
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "dev": "node scripts/copy-assets.mjs && vite web",
-    "build": "node scripts/copy-assets.mjs && vite build web && node scripts/build-deploy.mjs",
+    "dev:api": "tsx scripts/dev-server.ts",
+    "build": "node scripts/copy-assets.mjs && vite build web",
+    "build:node": "esbuild deploy/node/server.ts --bundle --platform=node --format=esm --target=node22 --outfile=deploy/node/dist/server.mjs",
+    "start": "node deploy/node/dist/server.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "deploy": "npm run build && npx -y spacefast publish .deploy -y --wait"
+    "deploy": "npm run build && node deploy/spacefast/build.mjs && npx -y spacefast publish .deploy -y --wait"
   },
   "dependencies": {
     "chess.js": "^1.4.0",

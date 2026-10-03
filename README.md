@@ -6,29 +6,48 @@ Jev, TypeSafe AI's decision model, plays chess nonstop against [Maia-3](https://
 
 - Each turn, `src/core/facts.ts` lists every legal move with facts about it: captures, checks, material won or lost on that square, pieces left open to capture, threats. Nothing looks ahead to the opponent's reply.
 - `src/core/jev.ts` sends the position and the moves to Jev as one Choice question. Jev picks a move and returns a probability for every option.
-- The opponent is Maia-3 (5M), run in plain TypeScript by [maia3-ts](https://github.com/dmallory42/maia3-ts) so it fits in a Spacefast worker.
+- The opponent is Maia-3 (5M), run in plain TypeScript by [maia3-ts](https://github.com/dmallory42/maia3-ts), so it fits in small serverless workers.
 - `src/core/runner.ts` plays the games, paces the moves for viewers (one every 3 seconds, at most 60 seconds ahead) and updates the rating after each game.
 - The viewer's evaluation bar runs Stockfish (lite, single-threaded WASM) in the browser. It's display only and never reaches Jev.
-- The site is static (`web/`) plus Spacefast Functions routes (`functions/api/`) backed by the space's database.
 
-## Develop
+## Running it
+
+The site is a static viewer (`web/`) plus an API that `src/server/app.ts` provides as one Web-standard fetch handler. A host needs to provide:
+
+- static file hosting for the built viewer and the Maia weights
+- something that runs the fetch handler for `/api/*`
+- a MySQL or SQLite database, reached through a D1-style binding
+- the `TYPESAFE_API_KEY` secret
+- optionally, a timer that calls `/api/tick`. Without one, games only advance while someone has the page open.
+
+`deploy/` has an adapter for each host. The simplest is `deploy/node`, which runs everything in one Node process with SQLite and a built-in timer:
 
 ```bash
 npm install
-node scripts/copy-assets.mjs                # Stockfish and the Maia weights into web/public
-npm test
-npx tsx scripts/dev-server.ts --fake-jev   # local API on :8788; drop --fake-jev to use real Jev
-npx vite web                               # viewer on :5173, proxies /api
+npm run build
+npm run build:node
+TYPESAFE_API_KEY=... npm start   # http://localhost:8080, data in data/jev.sqlite
 ```
 
-Real Jev calls need `TYPESAFE_API_KEY` in the environment or in `.env.server` (gitignored).
-
-## Deploy
+Or as a container:
 
 ```bash
-npx spacefast env set TYPESAFE_API_KEY --value-from-stdin < key.txt   # once
-npm run deploy
+docker build -f deploy/node/Dockerfile -t jev-plays-chess .
+docker run -p 8080:8080 -v jev-data:/data -e TYPESAFE_API_KEY=... jev-plays-chess
 ```
+
+## Develop
+
+Needs Node 22.13 or later, for its built-in SQLite.
+
+```bash
+npm install
+npm test
+npm run dev:api -- --fake-jev   # API on :8788 with an in-memory database; drop --fake-jev to use real Jev
+npm run dev                     # viewer on :5173, proxies /api
+```
+
+`--fake-jev` swaps Jev for a stand-in that grabs material, so development doesn't spend TypeSafe credits. `--random-opponent` does the same for Maia. Real Jev calls need `TYPESAFE_API_KEY` in the environment or in `.env.server` (gitignored).
 
 ## Licence
 

@@ -1,0 +1,11 @@
+.git
+node_modules
+.deploy
+web/dist
+web/public/stockfish
+web/public/maia3-5m.safetensors
+deploy/node/dist
+data
+runs
+.env
+.env.server

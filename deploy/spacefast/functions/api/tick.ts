@@ -1,0 +1,4 @@
+import { handle } from "../../handler";
+
+export const GET = handle;
+export const POST = handle;

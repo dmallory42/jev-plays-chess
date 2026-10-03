@@ -1,4 +1,5 @@
 // Assembles .deploy/ for Spacefast: the built site plus one bundled module per API route.
+// Run from the repo root after `npm run build`.
 import { build } from "esbuild";
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -18,12 +19,12 @@ const walk = (dir) => {
     else if (name.endsWith(".ts") && !name.startsWith("_")) routes.push(path);
   }
 };
-walk("functions");
+walk("deploy/spacefast/functions");
 
 for (const entry of routes) {
   await build({
     entryPoints: [entry],
-    outfile: join(out, relative(".", entry)).replace(/\.ts$/, ".js"),
+    outfile: join(out, relative("deploy/spacefast", entry)).replace(/\.ts$/, ".js"),
     bundle: true,
     format: "esm",
     platform: "neutral",

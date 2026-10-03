@@ -1,7 +1,8 @@
 import type { Memory, OpeningRecord, Pattern } from "./memory";
 import { newLadder, type GameRow, type Ladder, type PlyRow, type Store } from "./store";
 
-// The D1-shaped binding Spacefast gives a Functions worker (MySQL underneath).
+// A D1-style database binding. Hosts that provide one (Spacefast, Cloudflare) pass it straight
+// in; anything else wraps its driver, as deploy/node does for SQLite.
 export interface D1Like {
   prepare(sql: string): { bind(...args: unknown[]): D1Statement } & D1Statement;
 }
@@ -11,14 +12,39 @@ interface D1Statement {
   run(): Promise<unknown>;
 }
 
-const SCHEMA = [
-  `CREATE TABLE IF NOT EXISTS ladder (
+// MySQL and SQLite differ only in index declarations and upserts here.
+export type Dialect = "mysql" | "sqlite";
+
+const INDEXES: Record<string, [name: string, column: string][]> = {
+  plies: [["plies_show_at", "show_at"]],
+  viewers: [["viewers_seen", "seen"]],
+};
+
+// MySQL takes the indexes inside CREATE TABLE (it has no CREATE INDEX IF NOT EXISTS); SQLite needs them separately.
+function schema(dialect: Dialect) {
+  const tables = TABLES.map(([table, columns]) => {
+    const inline = dialect === "mysql" ? (INDEXES[table] ?? []).map(([name, col]) => `,\n    INDEX ${name} (${col})`).join("") : "";
+    return `CREATE TABLE IF NOT EXISTS ${table} (${columns}${inline}\n  )`;
+  });
+  if (dialect === "mysql") return tables;
+  const indexes = Object.entries(INDEXES).flatMap(([table, list]) => list.map(([name, col]) => `CREATE INDEX IF NOT EXISTS ${name} ON ${table} (${col})`));
+  return [...tables, ...indexes];
+}
+
+// Insert, or update the existing row on a key clash. In `updates`, new.<column> is the value being inserted.
+function upsert(dialect: Dialect, insert: string, key: string, updates: string) {
+  return dialect === "mysql"
+    ? `${insert} ON DUPLICATE KEY UPDATE ${updates.replace(/new\.(\w+)/g, "VALUES($1)")}`
+    : `${insert} ON CONFLICT(${key}) DO UPDATE SET ${updates.replace(/new\.(\w+)/g, "excluded.$1")}`;
+}
+
+const TABLES: [table: string, columns: string][] = [
+  ["ladder", `
     id TINYINT PRIMARY KEY,
     data TEXT NOT NULL,
     lease_owner VARCHAR(64) NULL,
-    lease_until BIGINT NOT NULL DEFAULT 0
-  )`,
-  `CREATE TABLE IF NOT EXISTS games (
+    lease_until BIGINT NOT NULL DEFAULT 0`],
+  ["games", `
     id INT PRIMARY KEY,
     jev_color CHAR(1) NOT NULL,
     opp_elo INT NOT NULL,
@@ -28,9 +54,8 @@ const SCHEMA = [
     termination VARCHAR(64) NULL,
     plies INT NOT NULL,
     started_at BIGINT NOT NULL,
-    ended_show_at BIGINT NULL
-  )`,
-  `CREATE TABLE IF NOT EXISTS plies (
+    ended_show_at BIGINT NULL`],
+  ["plies", `
     game_id INT NOT NULL,
     ply INT NOT NULL,
     side VARCHAR(3) NOT NULL,
@@ -39,26 +64,20 @@ const SCHEMA = [
     fen VARCHAR(100) NOT NULL,
     show_at BIGINT NOT NULL,
     data MEDIUMTEXT NOT NULL,
-    PRIMARY KEY (game_id, ply),
-    INDEX plies_show_at (show_at)
-  )`,
-  `CREATE TABLE IF NOT EXISTS patterns (
+    PRIMARY KEY (game_id, ply)`],
+  ["patterns", `
     pkey VARCHAR(64) PRIMARY KEY,
     text TEXT NOT NULL,
     played INT NOT NULL,
     wrong INT NOT NULL,
-    last_game INT NOT NULL
-  )`,
-  `CREATE TABLE IF NOT EXISTS openings (
+    last_game INT NOT NULL`],
+  ["openings", `
     okey VARCHAR(160) PRIMARY KEY,
     games INT NOT NULL,
-    points DOUBLE NOT NULL
-  )`,
-  `CREATE TABLE IF NOT EXISTS viewers (
+    points DOUBLE NOT NULL`],
+  ["viewers", `
     id VARCHAR(40) PRIMARY KEY,
-    seen BIGINT NOT NULL,
-    INDEX viewers_seen (seen)
-  )`,
+    seen BIGINT NOT NULL`],
 ];
 
 type GameDb = {
@@ -103,11 +122,14 @@ const toPly = (r: PlyDb): PlyRow => ({
 });
 
 export class SqlStore implements Store, Memory {
-  constructor(private db: D1Like) {}
+  constructor(
+    private db: D1Like,
+    private dialect: Dialect = "mysql",
+  ) {}
 
   async init() {
-    for (const sql of SCHEMA) await this.db.prepare(sql).run();
-    await this.db.prepare("INSERT IGNORE INTO ladder (id, data) VALUES (1, ?)").bind(JSON.stringify(newLadder(Date.now()))).run();
+    for (const sql of schema(this.dialect)) await this.db.prepare(sql).run();
+    await this.db.prepare(upsert(this.dialect, "INSERT INTO ladder (id, data) VALUES (1, ?)", "id", "id = id")).bind(JSON.stringify(newLadder(Date.now()))).run();
   }
 
   // Conditional update, then read back who owns it. Doesn't rely on affected-row counts.
@@ -202,7 +224,7 @@ export class SqlStore implements Store, Memory {
 
   async allPatterns(minPlayed: number, limit: number) {
     const { results } = await this.db
-      .prepare("SELECT * FROM patterns WHERE played >= ? ORDER BY wrong / played DESC, played DESC LIMIT ?")
+      .prepare("SELECT * FROM patterns WHERE played >= ? ORDER BY wrong * 1.0 / played DESC, played DESC LIMIT ?")
       .bind(minPlayed, limit)
       .all<PatternDb>();
     return results.map(toPattern);
@@ -212,7 +234,12 @@ export class SqlStore implements Store, Memory {
     for (const m of moves) {
       await this.db
         .prepare(
-          "INSERT INTO patterns (pkey, text, played, wrong, last_game) VALUES (?, ?, 1, ?, ?) ON DUPLICATE KEY UPDATE played = played + 1, wrong = wrong + VALUES(wrong), text = VALUES(text), last_game = VALUES(last_game)",
+          upsert(
+            this.dialect,
+            "INSERT INTO patterns (pkey, text, played, wrong, last_game) VALUES (?, ?, 1, ?, ?)",
+            "pkey",
+            "played = played + 1, wrong = wrong + new.wrong, text = new.text, last_game = new.last_game",
+          ),
         )
         .bind(m.key, m.text, m.wrong ? 1 : 0, gameId)
         .run();
@@ -246,14 +273,14 @@ export class SqlStore implements Store, Memory {
   async addOpenings(keys: string[], points: number) {
     for (const k of keys) {
       await this.db
-        .prepare("INSERT INTO openings (okey, games, points) VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE games = games + 1, points = points + VALUES(points)")
+        .prepare(upsert(this.dialect, "INSERT INTO openings (okey, games, points) VALUES (?, 1, ?)", "okey", "games = games + 1, points = points + new.points"))
         .bind(k, points)
         .run();
     }
   }
 
   async touchViewer(id: string, now: number) {
-    await this.db.prepare("INSERT INTO viewers (id, seen) VALUES (?, ?) ON DUPLICATE KEY UPDATE seen = VALUES(seen)").bind(id, now).run();
+    await this.db.prepare(upsert(this.dialect, "INSERT INTO viewers (id, seen) VALUES (?, ?)", "id", "seen = new.seen")).bind(id, now).run();
     // Occasional cleanup keeps the table small without a separate job.
     if (Math.random() < 0.02) await this.db.prepare("DELETE FROM viewers WHERE seen < ?").bind(now - 3_600_000).run();
   }
