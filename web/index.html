@@ -8,17 +8,17 @@
     <link rel="icon" href="/pieces/wN.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <header class="masthead">
       <div class="brand">
-        <a class="wordmark" href="/">Jev plays chess</a>
+        <a class="wordmark" href="/" aria-label="Jev plays chess, home">jev<span>/</span>chess</a>
         <span class="watching" id="watching" hidden></span>
       </div>
       <div class="standing" aria-live="polite">
-        <span class="standing-label">ELO:</span>
+        <span class="standing-label">Rating</span>
         <span class="standing-rating" id="rating">–</span>
         <span class="standing-detail">
           <span id="rating-delta"></span>
@@ -69,9 +69,9 @@
         <div class="weighed" id="weighed" hidden>
           <div class="weighed-head">
             <h3 class="weighed-title" id="weighed-title">Options</h3>
-            <ul class="meta" id="weighed-meta"></ul>
           </div>
           <ol class="options" id="options"></ol>
+          <ul class="meta" id="weighed-meta"></ul>
         </div>
       </section>
     </main>

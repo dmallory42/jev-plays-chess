@@ -46,8 +46,10 @@ export function drawBoard(
 ) {
   const squares = layer(svg, "squares");
   const highlights = layer(svg, "highlights");
+  layer(svg, "heat");
   const pieces = layer(svg, "pieces");
   layer(svg, "arrows");
+  layer(svg, "heat-labels");
 
   if (!squares.childElementCount) {
     for (let i = 0; i < 64; i++) {
@@ -135,5 +137,26 @@ export function drawArrows(svg: SVGSVGElement, arrows: Arrow[], orientation: "w"
         opacity: (a.chosen ? 0.85 : 0.3 + 0.6 * a.weight).toFixed(2),
       }),
     );
+  }
+}
+
+// Shades each destination square by the probability Jev gave moves landing there, with the share in its corner.
+export function drawHeat(svg: SVGSVGElement, options: { to: string; p: number }[], orientation: "w" | "b") {
+  const fills = layer(svg, "heat");
+  const labels = layer(svg, "heat-labels");
+  fills.replaceChildren();
+  labels.replaceChildren();
+  const bySquare = new Map<string, number>();
+  for (const o of options) bySquare.set(o.to, (bySquare.get(o.to) ?? 0) + o.p);
+  for (const [square, p] of bySquare) {
+    if (p < 0.01) continue;
+    const { x, y } = xy(square, orientation);
+    fills.appendChild(el("rect", { x, y, width: SQ, height: SQ, class: "heat", "fill-opacity": (0.18 + 0.62 * p).toFixed(2) }));
+    const text = `${Math.round(p * 100)}%`;
+    const w = 14 + text.length * 13;
+    labels.appendChild(el("rect", { x: x + 3, y: y + SQ - 31, width: w, height: 28, rx: 4, class: "heat-chip" }));
+    const t = el("text", { x: x + 3 + w / 2, y: y + SQ - 10.5, "text-anchor": "middle", class: "heat-text" });
+    t.textContent = text;
+    labels.appendChild(t);
   }
 }

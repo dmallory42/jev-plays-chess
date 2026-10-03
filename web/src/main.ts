@@ -1,4 +1,4 @@
-import { drawArrows, drawBoard, type Arrow } from "./board";
+import { drawArrows, drawBoard, drawHeat, type Arrow } from "./board";
 import { nag, rate, type Rating } from "./annotate";
 import { Engine, scoreLabel, whiteShare, type Evaluation } from "./eval";
 import { figurine, icon, pieceIcon, tagChips, type Colour, type PieceType, type Tag } from "./notation";
@@ -164,6 +164,9 @@ function renderPlayers() {
   bottom.innerHTML = strip("Jev", "is-jev", game.jevColor, Math.round(game.ratingBefore));
 }
 
+// Where Jev's options would land, for the heat map.
+const heatFor = (ply: Ply & { data: JevData }) => ply.data.top.filter((o) => o.uci).map((o) => ({ to: o.uci.slice(2, 4), p: o.p }));
+
 function arrowsFor(ply: Ply & { data: JevData }, onlyChosen: boolean): Arrow[] {
   return ply.data.top
     .filter((o) => o.p >= 0.03 && o.uci)
@@ -175,8 +178,10 @@ function arrowsFor(ply: Ply & { data: JevData }, onlyChosen: boolean): Arrow[] {
 // Mirrors RESIGN_AT in src/core/runner.ts.
 const RESIGN_AT_JEV = 0.7;
 const RESIGN_AT_MAIA = 0.9;
+const metaTile = (label: string, value: string, title: string, cls = "") =>
+  `<li class="${cls}" title="${title}"><span class="meta-label">${label}</span><span class="meta-value">${value}</span></li>`;
 const resignMeta = (v: number, at: number, what: string) =>
-  `<li class="${v >= at ? "resign-high" : ""}" title="${what} ${v.toFixed(2)}. Resigns at ${at.toFixed(2)} or more on two turns running.">${icon("flag")}${v.toFixed(2)}</li>`;
+  metaTile("Resign", v.toFixed(2), `${what} ${v.toFixed(2)}. Resigns at ${at.toFixed(2)} or more on two turns running.`, v >= at ? "resign-high" : "");
 
 const moverOf = (p: Ply): Colour => (p.ply % 2 === 0 ? "w" : "b");
 const moveNumberLabel = (p: Ply) => `Move ${moveNo(p.ply)}${p.ply % 2 ? ", Black" : ""}`;
@@ -277,10 +282,10 @@ function renderMind(ply: Ply | undefined, thinking: boolean) {
   }
   $("weighed-title").textContent = "Options";
   $("weighed-meta").innerHTML = [
-    `<li title="Legal moves">${icon("list")}${d.legal}</li>`,
-    `<li title="Time Jev took">${icon("clock")}${(d.latencyMs / 1000).toFixed(1)}s</li>`,
-    `<li title="Confidence: how concentrated Jev's probabilities are">${d.confidence.toFixed(2)}<span class="meta-conf"><span style="width:${d.confidence * 100}%"></span></span></li>`,
+    metaTile("Confidence", `${d.confidence.toFixed(2)}<span class="meta-conf"><span style="width:${d.confidence * 100}%"></span></span>`, "Confidence: how concentrated Jev's probabilities are"),
     d.resign !== undefined ? resignMeta(d.resign, RESIGN_AT_JEV, "Jev's answer to: should I resign?") : "",
+    metaTile("Legal moves", String(d.legal), "Legal moves in the position"),
+    metaTile("Time", `${(d.latencyMs / 1000).toFixed(1)}s`, "Time Jev took"),
   ].join("");
   renderOptions(
     d.top.filter((o, i) => i < 5 && (o.p >= 0.01 || i < 3)),
@@ -301,7 +306,10 @@ function renderScoresheet() {
       if (!p) return "<span></span>";
       const classes = [p.side === "jev" ? "by-jev" : "by-maia", p.ply === cursor - 1 ? (live ? "latest" : "current") : ""].join(" ");
       const r = game ? ratings.get(`${game.id}:${p.ply}`) : undefined;
-      return `<button type="button" class="${classes}" data-ply="${p.ply}" aria-label="Go to ${moveLabel(p)}">${p.san}${nag(r)}</button>`;
+      // Jev's moves carry a bar for the probability it gave the move it played.
+      const chosen = isJev(p) ? p.data.top.find((o) => o.san === p.san)?.p : undefined;
+      const bar = chosen === undefined ? "" : `<span class="pbar" title="Jev gave it ${pct(chosen)}"><span style="width:${(chosen * 100).toFixed(0)}%"></span></span>`;
+      return `<button type="button" class="${classes}" data-ply="${p.ply}" aria-label="Go to ${moveLabel(p)}">${p.san}${nag(r)}${bar}</button>`;
     };
     rows.push(`<li><span class="num">${moveNo(i)}.</span>${cell(plies[i])}${cell(plies[i + 1])}</li>`);
   }
@@ -439,8 +447,9 @@ function render(animate = false) {
   const shown = plies[cursor - 1];
   const orientation = game?.jevColor ?? "w";
   drawBoard(board, shown?.fen ?? START_FEN, orientation, lastMoveOf(shown), animate && !reducedMotion);
-  // Reviewing a Jev move shows everything it weighed; live shows only the move it played.
-  drawArrows(board, isJev(shown) ? arrowsFor(shown, live) : [], orientation);
+  // Reviewing a Jev move shows everything it weighed as a heat map; live shows only the move it played.
+  drawArrows(board, isJev(shown) ? arrowsFor(shown, true) : [], orientation);
+  drawHeat(board, isJev(shown) && !live ? heatFor(shown) : [], orientation);
   const explain = live ? [...plies].reverse().find((p) => isJev(p)) : shown;
   renderMind(explain, false);
   renderPlayers();
@@ -455,7 +464,8 @@ function render(animate = false) {
 function revealJevMove(ply: Ply & { data: JevData }) {
   const before = livePlies[ply.ply - 1];
   drawBoard(board, before?.fen ?? START_FEN, liveGame!.jevColor, lastMoveOf(before), false);
-  drawArrows(board, arrowsFor(ply, false), liveGame!.jevColor);
+  drawArrows(board, [], liveGame!.jevColor);
+  drawHeat(board, heatFor(ply), liveGame!.jevColor);
   renderMind(ply, true);
   thinkingTimer = window.setTimeout(() => render(true), THINK_MS);
 }
@@ -669,7 +679,8 @@ function renderLadder(s: Summary) {
   for (let r = lo; r <= hi; r += stepSize) grid.push(`<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(r)}" y2="${y(r)}"/><text class="axis" x="${pad.l - 8}" y="${y(r) + 4}" text-anchor="end">${r}</text>`);
   const path = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.rating).toFixed(1)}`).join("");
   const dots = points.length > 80 ? "" : points.slice(1).map((p, i) => `<circle class="${p.score === 1 ? "dot-win" : p.score === 0 ? "dot-loss" : "dot-draw"}" cx="${x(i + 1)}" cy="${y(p.rating)}" r="3.5"/>`).join("");
-  svg.innerHTML = `${grid.join("")}<path class="line" d="${path}"/>${dots}<text class="axis" x="${pad.l}" y="${H - 4}">Game 1</text><text class="axis" x="${W - pad.r}" y="${H - 4}" text-anchor="end">Game ${Math.max(1, s.games)}</text>`;
+  const area = `${path}L${x(points.length - 1).toFixed(1)},${H - pad.b}L${x(0).toFixed(1)},${H - pad.b}Z`;
+  svg.innerHTML = `${grid.join("")}<path class="area" d="${area}"/><path class="line" d="${path}"/>${dots}<text class="axis" x="${pad.l}" y="${H - 4}">Game 1</text><text class="axis" x="${W - pad.r}" y="${H - 4}" text-anchor="end">Game ${Math.max(1, s.games)}</text>`;
 }
 
 function renderGames(recent: Game[]) {
