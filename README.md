@@ -51,4 +51,4 @@ npm run dev                     # viewer on :5173, proxies /api
 
 ## Licence
 
-GPL-2.0-or-later. The site runs with [maia3-ts](https://github.com/dmallory42/maia3-ts), a port of Maia-3 by the CSSLab at the University of Toronto, which is AGPL-3.0-or-later, so the deployed site as a whole is offered under AGPL-3.0 terms. Chess pieces by Colin M.L. Burnett (GPLv2+). Stockfish is GPLv3.
+GPL-2.0-or-later. The site runs with [maia3-ts](https://github.com/dmallory42/maia3-ts), a port of Maia-3 by the CSSLab at the University of Toronto, which is AGPL-3.0-or-later, so the deployed site as a whole is offered under AGPL-3.0 terms. Chess pieces by Colin M.L. Burnett (GPLv2+). Stockfish is GPLv3. Opening names come from [Lichess's chess-openings list](https://github.com/lichess-org/chess-openings) (CC0).
