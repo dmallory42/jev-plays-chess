@@ -1,5 +1,5 @@
 import type { Memory, OpeningRecord, Pattern } from "./memory";
-import { newLadder, type GameRow, type Ladder, type PlyRow, type Store } from "./store";
+import { newLadder, type GameFilter, type GameRow, type Ladder, type PlyRow, type Store } from "./store";
 
 // A D1-style database binding. Hosts that provide one (Spacefast, Cloudflare) pass it straight
 // in; anything else wraps its driver, as deploy/node does for SQLite.
@@ -298,12 +298,35 @@ export class SqlStore implements Store, Memory {
     return results.map(toGame);
   }
 
-  async openingMoves(plies: number, shownBy: number) {
+  async listGames(f: GameFilter) {
+    const where = ["ended_show_at IS NOT NULL", "ended_show_at <= ?"];
+    const args: unknown[] = [f.shownBy];
+    if (f.beforeId !== undefined) {
+      where.push("id < ?");
+      args.push(f.beforeId);
+    }
+    if (f.colour) {
+      where.push("jev_color = ?");
+      args.push(f.colour);
+    }
+    const jevWon = "((result = '1-0' AND jev_color = 'w') OR (result = '0-1' AND jev_color = 'b'))";
+    const jevLost = "((result = '0-1' AND jev_color = 'w') OR (result = '1-0' AND jev_color = 'b'))";
+    if (f.outcome) where.push(f.outcome === "win" ? jevWon : f.outcome === "loss" ? jevLost : "result = '1/2-1/2'");
+    const { results } = await this.db
+      .prepare(`SELECT * FROM games WHERE ${where.join(" AND ")} ORDER BY id DESC LIMIT ?`)
+      .bind(...args, f.limit)
+      .all<GameDb>();
+    return results.map(toGame);
+  }
+
+  async openingMoves(plies: number, shownBy: number, ids?: number[]) {
+    if (ids?.length === 0) return new Map<number, string[]>();
+    const only = ids ? ` AND p.game_id IN (${ids.map(() => "?").join(", ")})` : "";
     const { results } = await this.db
       .prepare(
-        "SELECT p.game_id, p.san FROM plies p JOIN games g ON g.id = p.game_id WHERE g.ended_show_at IS NOT NULL AND g.ended_show_at <= ? AND p.ply < ? ORDER BY p.game_id, p.ply",
+        `SELECT p.game_id, p.san FROM plies p JOIN games g ON g.id = p.game_id WHERE g.ended_show_at IS NOT NULL AND g.ended_show_at <= ? AND p.ply < ?${only} ORDER BY p.game_id, p.ply`,
       )
-      .bind(shownBy, plies)
+      .bind(shownBy, plies, ...(ids ?? []))
       .all<{ game_id: number; san: string }>();
     const out = new Map<number, string[]>();
     for (const r of results) {

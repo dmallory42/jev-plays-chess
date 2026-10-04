@@ -97,8 +97,21 @@
     </section>
 
     <section class="games">
-      <h2 class="section-title">Recent games</h2>
+      <div class="games-head">
+        <h2 class="section-title">Recent games</h2>
+        <span class="games-count" id="games-count"></span>
+      </div>
+      <div class="form" id="form" hidden></div>
+      <div class="game-filters" id="game-filters" role="group" aria-label="Show games">
+        <button type="button" data-filter="" aria-pressed="true">All</button>
+        <button type="button" data-filter="outcome=win" aria-pressed="false">Wins</button>
+        <button type="button" data-filter="outcome=draw" aria-pressed="false">Draws</button>
+        <button type="button" data-filter="outcome=loss" aria-pressed="false">Losses</button>
+        <button type="button" data-filter="colour=w" aria-pressed="false">As White</button>
+        <button type="button" data-filter="colour=b" aria-pressed="false">As Black</button>
+      </div>
       <ul class="game-list" id="game-list"><li class="empty">Finished games show up here.</li></ul>
+      <button type="button" class="more-games" id="more-games" hidden>Show 20 more</button>
     </section>
 
     <footer class="colophon">

@@ -6,7 +6,7 @@ import { maiaOpponent } from "../core/maia-opponent";
 import { FLAG_MIN_PLAYED, recall } from "../core/memory";
 import { tick, type RunnerDeps } from "../core/runner";
 import { SqlStore, type D1Like, type Dialect } from "../core/sql-store";
-import { gameView, liveView, openingRecordView, plyView, summaryView } from "../core/views";
+import { gameListView, gameView, liveView, openingRecordView, plyView, summaryView } from "../core/views";
 
 export interface AppConfig {
   db: D1Like;
@@ -78,6 +78,22 @@ export async function handleApi(request: Request, config: AppConfig): Promise<Re
   }
 
   if (route === "games") return json(await summaryView(store, now));
+
+  // Finished games, newest first, 20 at a time: ?before=<id> for the next page, ?colour=w|b and ?outcome=win|draw|loss to filter.
+  if (route === "history") {
+    const q = url.searchParams;
+    const before = Number(q.get("before"));
+    const colour = q.get("colour");
+    const outcome = q.get("outcome");
+    return json(
+      await gameListView(store, now, {
+        limit: 20,
+        beforeId: Number.isInteger(before) && before > 0 ? before : undefined,
+        colour: colour === "w" || colour === "b" ? colour : undefined,
+        outcome: outcome === "win" || outcome === "draw" || outcome === "loss" ? outcome : undefined,
+      }),
+    );
+  }
 
   // A finished game's full move list, for replays.
   const gameId = /^games\/(\d+)$/.exec(route)?.[1];

@@ -1,7 +1,7 @@
 import { START_RATING } from "./elo";
 import { classifyOpening, OPENING_NAME_PLIES } from "./openings";
 import { jevScore } from "./runner";
-import type { GameRow, PlyRow, Store } from "./store";
+import type { GameFilter, GameRow, PlyRow, Store } from "./store";
 
 // What the public page shows. Everything is cut off at "now" so viewers never see ahead of the stream.
 
@@ -77,4 +77,18 @@ export async function openingRecordView(store: Store, now: number) {
     records.set(key, r);
   }
   return [...records.values()].sort((a, b) => b.games - a.games || a.name.localeCompare(b.name));
+}
+
+/** A page of finished games for the games list, each with the opening it reached, and whether older ones match too. */
+export async function gameListView(store: Store, now: number, filter: Omit<GameFilter, "shownBy">) {
+  const rows = await store.listGames({ ...filter, shownBy: now, limit: filter.limit + 1 });
+  const page = rows.slice(0, filter.limit);
+  const moves = await store.openingMoves(OPENING_NAME_PLIES, now, page.map((g) => g.id));
+  return {
+    games: page.map((g) => {
+      const opening = classifyOpening(moves.get(g.id) ?? []);
+      return { ...gameView(g), opening: opening && { eco: opening.eco, name: opening.name } };
+    }),
+    more: rows.length > filter.limit,
+  };
 }

@@ -45,6 +45,15 @@ export interface PlyRow {
   data: unknown;
 }
 
+/** Which finished games to list: newest first, optionally one colour or outcome for Jev, and older than a game id. */
+export interface GameFilter {
+  shownBy: number;
+  limit: number;
+  beforeId?: number;
+  colour?: "w" | "b";
+  outcome?: "win" | "draw" | "loss";
+}
+
 export interface Store {
   init(): Promise<void>;
   /** Takes the runner lease if it is free or expired. Returns false when another tick holds it. */
@@ -65,8 +74,10 @@ export interface Store {
   nextShowAt(shownBy: number): Promise<number | null>;
   /** Finished games viewers have seen, oldest first, for the record and rating chart. */
   shownHistory(shownBy: number): Promise<GameRow[]>;
-  /** The first `plies` moves (SAN) of each finished game viewers have seen, keyed by game id. */
-  openingMoves(plies: number, shownBy: number): Promise<Map<number, string[]>>;
+  /** Finished games viewers have seen that match the filter. */
+  listGames(filter: GameFilter): Promise<GameRow[]>;
+  /** The first `plies` moves (SAN) of each finished game viewers have seen, or of just `ids`, keyed by game id. */
+  openingMoves(plies: number, shownBy: number, ids?: number[]): Promise<Map<number, string[]>>;
   /** Records that a viewer's page is open, and drops long-gone viewers. */
   touchViewer(id: string, now: number): Promise<void>;
   countViewers(since: number): Promise<number>;
@@ -162,9 +173,17 @@ export class MemoryStore implements Store {
     return (await this.recentGames(Number.MAX_SAFE_INTEGER, shownBy)).reverse();
   }
 
-  async openingMoves(plies: number, shownBy: number) {
+  async listGames(f: GameFilter) {
+    const outcome = (g: GameRow) => (g.result === "1/2-1/2" ? "draw" : (g.result === "1-0") === (g.jevColor === "w") ? "win" : "loss");
+    return (await this.recentGames(Number.MAX_SAFE_INTEGER, f.shownBy))
+      .filter((g) => (f.beforeId === undefined || g.id < f.beforeId) && (!f.colour || g.jevColor === f.colour) && (!f.outcome || outcome(g) === f.outcome))
+      .slice(0, f.limit);
+  }
+
+  async openingMoves(plies: number, shownBy: number, ids?: number[]) {
     const out = new Map<number, string[]>();
     for (const g of await this.shownHistory(shownBy)) {
+      if (ids && !ids.includes(g.id)) continue;
       out.set(g.id, (await this.getPlies(g.id)).filter((p) => p.ply < plies).map((p) => p.san));
     }
     return out;

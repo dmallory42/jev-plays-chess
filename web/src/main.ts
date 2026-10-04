@@ -47,6 +47,7 @@ interface Game {
   result: string | null;
   termination: string | null;
   plies: number;
+  opening?: { eco: string; name: string } | null;
 }
 interface Live {
   now: number;
@@ -61,7 +62,7 @@ interface Summary {
   wins: number;
   draws: number;
   losses: number;
-  history: { id: number; rating: number; oppElo: number; score: number }[];
+  history: { id: number; rating: number; oppElo: number; score: number; jevColor: "w" | "b" }[];
   recent: Game[];
 }
 /** What the board shows: the live game, or a game being stepped through at `cursor` plies. */
@@ -107,6 +108,12 @@ let lastSummaryAt = 0;
 let bannerShownFor: number | null = null;
 const gameCache = new Map<number, Promise<{ game: Game; plies: Ply[] }>>();
 let recentGames: Game[] = [];
+// The games list: what's loaded so far under the chosen filter, and whether older games match too.
+let listedGames: Game[] = [];
+let listFilter = "";
+let listHasMore = false;
+let listNewest = 0;
+let listRequest = 0;
 
 // Starts loading a finished game (once), for clicks, hovers and idle prefetching.
 function fetchGame(id: number) {
@@ -548,7 +555,7 @@ async function openReview(gameId: number, ply: number | null) {
 
   const pending = fetchGame(gameId);
   // Switch straight away using what the games list already knows, then fill in the moves.
-  const known = recentGames.find((g) => g.id === gameId);
+  const known = [...recentGames, ...listedGames].find((g) => g.id === gameId);
   if (known) {
     view = { kind: "review", game: known, plies: [], cursor: 0, loading: true };
     render();
@@ -664,7 +671,14 @@ function renderSummary(s: Summary) {
       ? "No games finished yet"
       : `<span title="Won">W<b>${s.wins}</b></span><span title="Drawn">D<b>${s.draws}</b></span><span title="Lost">L<b>${s.losses}</b></span>`;
   renderLadder(s);
-  renderGames(s.recent);
+  renderForm(s.history);
+  $("games-count").textContent = s.games ? `${s.games} played` : "";
+  // A newly finished game reloads the list, keeping the filter but going back to the first page.
+  const newest = s.recent[0]?.id ?? 0;
+  if (newest !== listNewest) {
+    listNewest = newest;
+    void loadGames();
+  }
 }
 
 function renderLadder(s: Summary) {
@@ -692,29 +706,80 @@ function renderLadder(s: Summary) {
   svg.innerHTML = `${grid.join("")}<path class="area" d="${area}"/><path class="line" d="${path}"/>${dots}<text class="axis" x="${pad.l}" y="${H - 4}">Game 1</text><text class="axis" x="${W - pad.r}" y="${H - 4}" text-anchor="end">Game ${Math.max(1, s.games)}</text>`;
 }
 
-function renderGames(recent: Game[]) {
+const scoreOf = (g: Game) => (g.result === "1/2-1/2" ? 0.5 : (g.result === "1-0") === (g.jevColor === "w") ? 1 : 0);
+
+// The last 20 results as squares, oldest first, with the current run.
+function renderForm(history: Summary["history"]) {
+  const form = $("form");
+  const last = history.slice(-20);
+  form.hidden = last.length === 0;
+  if (!last.length) return;
+  const word = (s: number) => (s === 1 ? "win" : s === 0 ? "loss" : "draw");
+  const count = (s: number) => last.filter((h) => h.score === s).length;
+  let run = 0;
+  while (run < last.length && last[last.length - 1 - run]!.score === last.at(-1)!.score) run++;
+  const verb = { 1: "won", 0: "lost", 0.5: "drew" }[last.at(-1)!.score as 0 | 0.5 | 1];
+  const streak = run > 1 ? `${verb} the last ${run}` : `${verb} the latest`;
+  form.innerHTML = `<span class="form-squares" role="img" aria-label="Last ${last.length} results, oldest first: ${count(1)} wins, ${count(0.5)} draws, ${count(0)} losses">${last
+    .map((h) => `<span class="form-sq ${word(h.score)}" title="Game ${h.id}: ${word(h.score)}"></span>`)
+    .join("")}</span><span class="form-text">last ${last.length}: <b class="delta-up">${count(1)} W</b> · <b>${count(0.5)} D</b> · <b class="delta-down">${count(0)} L</b> · ${streak}</span>`;
+}
+
+function renderGames() {
   const list = $("game-list");
-  if (recent.length === 0) {
-    list.innerHTML = `<li class="empty">Finished games show up here.</li>`;
+  $("more-games").hidden = !listHasMore;
+  if (listedGames.length === 0) {
+    list.innerHTML = `<li class="empty">${listFilter ? "No games match." : "Finished games show up here."}</li>`;
     return;
   }
-  list.innerHTML = recent
+  list.innerHTML = listedGames
     .map((g) => {
-      const score = g.result === "1/2-1/2" ? 0.5 : (g.result === "1-0") === (g.jevColor === "w") ? 1 : 0;
+      const score = scoreOf(g);
       const [letter, word, cls] = score === 1 ? ["W", "Won", "win"] : score === 0 ? ["L", "Lost", "loss"] : ["D", "Drew", "draw"];
       const change = (g.ratingAfter ?? g.ratingBefore) - g.ratingBefore;
-      return `<li><a href="#game=${g.id}" aria-label="Game ${g.id}: ${word} as ${colourName(g.jevColor)} against Maia ${g.oppElo} by ${g.termination}. Replay it.">
+      const [family, variation] = (g.opening?.name ?? "Unnamed line").split(": ");
+      const opening = `<span class="game-family">${family}</span>${variation ? `<span class="game-variation">: ${variation}</span>` : ""}${g.opening ? ` <span class="game-eco">${g.opening.eco}</span>` : ""}`;
+      return `<li><a href="#game=${g.id}" aria-label="Game ${g.id}: ${word} as ${colourName(g.jevColor)} against Maia ${g.oppElo} by ${g.termination}, ${g.opening?.name ?? "unnamed opening"}. Replay it.">
         <span class="game-id">${g.id}</span>
         <span class="badge ${cls}" title="${word}">${letter}</span>
         <span class="swatch ${g.jevColor}" title="Jev played ${colourName(g.jevColor)}"></span>
-        <span class="game-opp">Maia ${g.oppElo}</span>
-        <span class="game-how">${g.termination}</span>
-        <span class="game-len">${Math.ceil(g.plies / 2)} moves</span>
-        <span class="game-change ${change >= 0 ? "delta-up" : "delta-down"}">${change >= 0 ? "+" : "−"}${Math.abs(change)}</span>
+        <span class="game-opening">${opening}</span>
+        <span class="game-how">${g.termination} · ${Math.ceil(g.plies / 2)} moves<br><span class="game-opp">vs ${g.oppElo}</span></span>
+        <span class="game-change ${change > 0 ? "delta-up" : change < 0 ? "delta-down" : ""}">${change > 0 ? "+" : change < 0 ? "−" : "±"}${Math.abs(change)}</span>
       </a></li>`;
     })
     .join("");
 }
+
+// Loads the first page for the current filter, or the next page after what's shown.
+async function loadGames(more = false) {
+  const request = ++listRequest;
+  const params = new URLSearchParams(listFilter);
+  if (more && listedGames.length) params.set("before", String(listedGames.at(-1)!.id));
+  const button = $<HTMLButtonElement>("more-games");
+  button.disabled = true;
+  try {
+    const page = await getJson<{ games: Game[]; more: boolean }>(`/api/history?${params}`);
+    // A newer request (another filter, or a refresh) wins.
+    if (request !== listRequest) return;
+    listedGames = more ? [...listedGames, ...page.games] : page.games;
+    listHasMore = page.more;
+    renderGames();
+  } catch (e) {
+    console.warn(e);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$("game-filters").addEventListener("click", (e) => {
+  const button = (e.target as HTMLElement).closest<HTMLButtonElement>("button[data-filter]");
+  if (!button) return;
+  listFilter = button.dataset.filter!;
+  for (const b of $("game-filters").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b === button));
+  void loadGames();
+});
+$("more-games").addEventListener("click", () => void loadGames(true));
 
 async function refreshSummary() {
   lastSummaryAt = Date.now();
