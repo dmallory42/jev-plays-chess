@@ -694,6 +694,8 @@ function renderSummary(s: Summary) {
   renderLadder(s);
   renderForm(s.history);
   $("games-count").textContent = s.games ? `${s.games} played` : "";
+  // Filters only make sense once there are games to filter.
+  $("game-filters").hidden = s.games === 0;
   // A newly finished game reloads the list, keeping the filter but going back to the first page.
   const newest = s.recent[0]?.id ?? 0;
   if (newest !== listNewest) {
@@ -747,7 +749,12 @@ function renderGames() {
   const list = $("game-list");
   $("more-games").hidden = !listHasMore;
   if (listedGames.length === 0) {
-    list.innerHTML = `<li class="empty">${listFilter ? "No games match." : "Finished games show up here."}</li>`;
+    // With a filter: say which kind of game there isn't yet. Without one: Jev hasn't finished a game at all.
+    const chosen = $("game-filters").querySelector('[aria-pressed="true"]')?.textContent ?? "";
+    const kind = { Wins: "wins", Draws: "draws", Losses: "losses", "As White": "games as White", "As Black": "games as Black" }[chosen] ?? "games";
+    list.innerHTML = listFilter
+      ? `<li class="empty">No ${kind} yet.</li>`
+      : `<li class="empty-state">No recent games</li>`;
     return;
   }
   list.innerHTML = listedGames

@@ -1184,6 +1184,18 @@ button:focus-visible {
   color: var(--ink-soft);
 }
 
+.game-list:has(.empty-state) {
+  border-top: 0;
+}
+
+.game-list .empty-state {
+  padding: 32px 0 16px;
+  border: 0;
+  text-align: center;
+  font: 500 14px / 1.4 var(--mono);
+  color: var(--ink-soft);
+}
+
 .game-id {
   font: 500 13px / 1.2 var(--mono);
   color: var(--ink-soft);
