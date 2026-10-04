@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Update log · Jev plays chess</title>
+    <meta name="description" content="Each change to how Jev chooses its moves, and where it stood at the time." />
+    <link rel="icon" href="/pieces/wN.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="wordmark" href="/" aria-label="Jev plays chess, home">jev<span>/</span>chess</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode"></button>
+    </header>
+    <main class="learned">
+      <h1 class="learned-title">Update log</h1>
+      <p class="learned-intro">Jev plays every game the same way until we change what it's shown or asked. These are those changes, newest first, with where Jev stood when each one went live and how it has done since.</p>
+      <ol class="changes" id="changes"><li class="empty">Loading…</li></ol>
+    </main>
+    <script type="module" src="/src/log.ts"></script>
+  </body>
+</html>

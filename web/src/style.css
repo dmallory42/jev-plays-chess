@@ -1332,6 +1332,71 @@ button:focus-visible {
   }
 }
 
+/* Update log: one card per change to how Jev plays. */
+.changes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.changes .empty {
+  color: var(--ink-soft);
+}
+
+.change {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+
+.change-when {
+  margin: 0;
+  font: 500 12px / 1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.change-title {
+  margin: 10px 0 0;
+  font: 600 22px / 1.2 var(--display);
+  letter-spacing: -0.01em;
+}
+
+.change-body {
+  margin: 8px 0 0;
+  max-width: 68ch;
+}
+
+.change-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 16px 0 0;
+}
+
+.change-stats div {
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.change-stats dt {
+  font: 500 11px / 1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.change-stats dd {
+  margin: 6px 0 0;
+  font: 600 16px / 1.3 var(--display);
+  font-variant-numeric: tabular-nums;
+}
+
 /* How it works: prose on its own spacious page. */
 .prose {
   width: min(680px, 100% - 32px);
