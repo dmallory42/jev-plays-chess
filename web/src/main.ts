@@ -349,7 +349,7 @@ function renderScoresheet() {
     };
     rows.push(`<li><span class="num">${moveNo(i)}.</span>${cell(plies[i])}${cell(plies[i + 1])}</li>`);
   }
-  $("scoresheet").innerHTML = rows.join("");
+  $("scoresheet").innerHTML = rows.length ? rows.join("") : `<li class="scoresheet-empty">No moves yet</li>`;
 }
 
 function renderBanner() {

@@ -911,6 +911,15 @@ button:focus-visible {
   font: 500 14px / 1.6 var(--mono);
 }
 
+.scoresheet .scoresheet-empty {
+  display: block;
+  column-span: all;
+  padding: 32px 0 16px;
+  text-align: center;
+  font: 500 14px / 1.4 var(--mono);
+  color: var(--ink-soft);
+}
+
 .scoresheet li {
   display: grid;
   grid-template-columns: 30px 1fr 1fr;
