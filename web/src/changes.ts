@@ -9,6 +9,12 @@ export interface Change {
 
 export const CHANGES: Change[] = [
   {
+    fromGame: 232,
+    date: "4 October 2026",
+    title: "Jev tries other openings",
+    body: "With memory, Jev played 1. Nf3 in every game as White: it was the first move that scored well, so Jev never tried another. Now, in its first four moves, about one in seven plays one of its other options that doesn't lose material instead of its top pick, so its opening records compare more than one line. These moves are marked \"Exploring\".",
+  },
+  {
     fromGame: 61,
     date: "1 October 2026",
     title: "Jev remembers its past games",
