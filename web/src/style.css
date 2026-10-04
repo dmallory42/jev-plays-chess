@@ -795,7 +795,7 @@ button:focus-visible {
 
 .option {
   display: grid;
-  grid-template-columns: 92px minmax(60px, 1fr) 40px 168px;
+  grid-template-columns: 92px minmax(60px, 1fr) 40px minmax(0, 1.4fr);
   gap: 12px;
   align-items: center;
   min-height: 30px;
@@ -859,8 +859,8 @@ button:focus-visible {
 .option .chips {
   display: flex;
   margin: 0;
-  flex-wrap: nowrap;
-  overflow: hidden;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 @media (max-width: 880px) {

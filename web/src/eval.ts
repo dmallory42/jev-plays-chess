@@ -155,7 +155,8 @@ export function whiteShare(e: Evaluation) {
 export const winChance = (e: Evaluation, side: "w" | "b") => (side === "w" ? whiteShare(e) : 1 - whiteShare(e)) * 100;
 
 export function scoreLabel(e: Evaluation) {
-  if (e.mate !== undefined) return e.mate === 0 ? "#" : `M${Math.abs(e.mate)}`;
+  // Checkmate on the board: show the result rather than a mate count.
+  if (e.mate !== undefined) return e.mate === 0 ? (e.whiteToMove ? "0-1" : "1-0") : `M${Math.abs(e.mate)}`;
   const pawns = (e.cp ?? 0) / 100;
   return `${pawns > 0 ? "+" : ""}${pawns.toFixed(1)}`;
 }
