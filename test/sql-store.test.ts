@@ -62,3 +62,16 @@ describe("SqlStore on SQLite", () => {
     expect(await store.getGame(2)).toEqual({ id: 2, ...game });
   });
 });
+
+describe("SqlStore.clearGames", () => {
+  it("deletes every game and ply", async () => {
+    const store = new SqlStore(sqliteD1(":memory:"), "sqlite");
+    await store.init();
+    const id = await store.createGame({ jevColor: "w", oppElo: 600, ratingBefore: 600, ratingAfter: null, result: null, termination: null, plies: 0, startedAt: 0, endedShowAt: null });
+    await store.addPly({ gameId: id, ply: 0, side: "jev", san: "e4", uci: "e2e4", fen: "", showAt: 0, data: {} });
+    await store.clearGames();
+    expect(await store.getGame(id)).toBeNull();
+    expect(await store.getPlies(id)).toEqual([]);
+    expect(await store.createGame({ jevColor: "w", oppElo: 600, ratingBefore: 600, ratingAfter: null, result: null, termination: null, plies: 0, startedAt: 0, endedShowAt: null })).toBe(1);
+  });
+});

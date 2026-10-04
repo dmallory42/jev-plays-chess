@@ -223,3 +223,32 @@ describe("memory", () => {
     expect(JSON.stringify(await memory.allOpenings(1, 100))).toBe(before);
   }, 60_000);
 });
+
+describe("season", () => {
+  it("restarts an old ladder once: no games, no memory, the starting rating", async () => {
+    const { MemoryMemory } = await import("../src/core/memory");
+    const { START_RATING } = await import("../src/core/elo");
+    const store = new MemoryStore();
+    const memory = new MemoryMemory();
+    const clock = { t: 1_000_000 };
+    // A ladder from before seasons existed, with a finished game and something learned.
+    const old = { ...(await store.getLadder()), season: undefined, rating: 885, games: 1, wins: 1, nextShowAt: clock.t };
+    await store.saveLadder(old);
+    await store.createGame({ jevColor: "w", oppElo: 875, ratingBefore: 875, ratingAfter: 885, result: "1-0", termination: "checkmate", plies: 1, startedAt: 0, endedShowAt: 1 });
+    await memory.addPatterns([{ key: "k", text: "t", wrong: true }], 1);
+    await memory.addOpenings(["w:e4"], 1);
+
+    await tick(deps(store, clock, { memory }));
+    const ladder = await store.getLadder();
+    expect([ladder.season, ladder.games]).toEqual([2, 0]);
+    expect(await memory.allPatterns(1, 10)).toEqual([]);
+    expect(await memory.allOpenings(1, 10)).toEqual([]);
+    const first = await store.getGame(1);
+    expect([first!.ratingBefore, first!.oppElo]).toEqual([START_RATING, START_RATING]);
+
+    // A second tick carries on the same season.
+    clock.t += 120_000;
+    await tick(deps(store, clock, { memory }));
+    expect((await store.getGame(1))!.startedAt).toBe(first!.startedAt);
+  }, 15_000);
+});

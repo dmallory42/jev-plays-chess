@@ -2,6 +2,7 @@ import "./theme";
 import { drawArrows, drawBoard, drawHeat, type Arrow } from "./board";
 import { nag, rate, type Rating } from "./annotate";
 import { Engine, scoreLabel, whiteShare, type Evaluation } from "./eval";
+import { START_RATING } from "../../src/core/elo";
 import { captures } from "./material";
 import { figurine, icon, pieceIcon, tagChips, type Colour, type PieceType, type Tag } from "./notation";
 
@@ -709,7 +710,7 @@ function renderLadder(s: Summary) {
   note.hidden = s.history.length > 0;
   note.textContent = "Starts after the first game.";
   if (s.history.length === 0) return;
-  const points = [{ id: 0, rating: 1000, score: -1 }, ...s.history];
+  const points = [{ id: 0, rating: START_RATING, score: -1 }, ...s.history];
   const W = 600;
   const H = 220;
   const pad = { l: 48, r: 12, t: 12, b: 24 };

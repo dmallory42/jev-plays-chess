@@ -3,7 +3,7 @@ import { pickOpponentElo, updateRating } from "./elo";
 import type { JevDecision } from "./jev";
 import { positionSnapshot, type MoveFacts } from "./facts";
 import { learnFromGame, MEMORY_VERSION, type Memory, type Recall } from "./memory";
-import type { GameRow, Ladder, PlyRow, Result, Store } from "./store";
+import { newLadder, SEASON, type GameRow, type Ladder, type PlyRow, type Result, type Store } from "./store";
 
 export const MAX_PLIES = 300;
 // A side resigns when its reading is at least this high on two of its turns in a row.
@@ -134,6 +134,15 @@ async function finishGame(deps: RunnerDeps, ladder: Ladder, game: GameRow, plies
 // from exactly once, and games played before memory existed get picked up too.
 // Learning takes several seconds per game in the worker, so one game per tick.
 const LEARN_PER_TICK = 1;
+// Starts the ladder again from nothing: every game and ply deleted, memory cleared, the starting rating.
+async function startSeason(deps: RunnerDeps, now: number) {
+  await deps.store.clearGames();
+  await deps.memory?.reset();
+  const ladder: Ladder = { ...newLadder(now), memoryVersion: MEMORY_VERSION, memoryUpTo: 0 };
+  await deps.store.saveLadder(ladder);
+  return ladder;
+}
+
 async function catchUpMemory(deps: RunnerDeps, ladder: Ladder) {
   if (!deps.memory) return 0;
   if (ladder.memoryVersion !== MEMORY_VERSION) {
@@ -165,7 +174,8 @@ export async function tick(deps: RunnerDeps): Promise<TickResult> {
   if (!(await deps.store.tryLease(owner, started, started + deps.budgetMs + 15_000))) return { ...out, skipped: "leased" };
 
   try {
-    const ladder = await deps.store.getLadder();
+    let ladder = await deps.store.getLadder();
+    if ((ladder.season ?? 1) !== SEASON) ladder = await startSeason(deps, now());
     // A tick that learned has used part of its time, so it plays for less.
     const learned = await catchUpMemory(deps, ladder);
     const budget = learned ? deps.budgetMs / 2 : deps.budgetMs;

@@ -1,4 +1,4 @@
-export const START_RATING = 1000;
+export const START_RATING = 600;
 // Maia-3's trustworthy Elo range; opponents are clamped to it.
 export const OPPONENT_MIN_ELO = 600;
 export const OPPONENT_MAX_ELO = 2600;

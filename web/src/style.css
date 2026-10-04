@@ -1471,6 +1471,25 @@ button:focus-visible {
   color: var(--jev);
 }
 
+.change-era {
+  padding: 8px 0 28px 202px;
+}
+
+.change-era h2 {
+  margin: 0;
+  font: 500 12px / 1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.change-era p {
+  margin: 8px 0 0;
+  max-width: 72ch;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
 .change-stats {
   margin: 14px 0 0;
   font: 500 12px / 1.6 var(--mono);
@@ -1491,6 +1510,9 @@ button:focus-visible {
   .change-items li {
     grid-template-columns: minmax(0, 1fr);
     gap: 4px;
+  }
+  .change-era {
+    padding: 8px 0 28px 0;
   }
   /* The dot marks the date line above the changes. */
   .change-main::before {

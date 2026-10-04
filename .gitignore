@@ -9,3 +9,4 @@ runs/
 web/public/maia3-5m.safetensors
 data/
 deploy/node/dist/
+archive/

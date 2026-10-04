@@ -298,6 +298,11 @@ export class SqlStore implements Store, Memory {
     return results.map(toGame);
   }
 
+  async clearGames() {
+    await this.db.prepare("DELETE FROM plies").run();
+    await this.db.prepare("DELETE FROM games").run();
+  }
+
   async listGames(f: GameFilter) {
     const where = ["ended_show_at IS NOT NULL", "ended_show_at <= ?"];
     const args: unknown[] = [f.shownBy];

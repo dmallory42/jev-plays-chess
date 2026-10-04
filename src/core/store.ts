@@ -18,7 +18,12 @@ export interface Ladder {
   memoryUpTo?: number;
   /** Format the learned memory is in; a mismatch relearns from every game. */
   memoryVersion?: number;
+  /** Which run of the ladder this is. Missing on the first run. */
+  season?: number;
 }
+
+/** Bumped to restart the ladder: no games, no memory, the starting rating. The runner does it once. */
+export const SEASON = 2;
 
 export interface GameRow {
   id: number;
@@ -74,6 +79,8 @@ export interface Store {
   nextShowAt(shownBy: number): Promise<number | null>;
   /** Finished games viewers have seen, oldest first, for the record and rating chart. */
   shownHistory(shownBy: number): Promise<GameRow[]>;
+  /** Deletes every game and ply, for a new season. */
+  clearGames(): Promise<void>;
   /** Finished games viewers have seen that match the filter. */
   listGames(filter: GameFilter): Promise<GameRow[]>;
   /** The first `plies` moves (SAN) of each finished game viewers have seen, or of just `ids`, keyed by game id. */
@@ -84,6 +91,7 @@ export interface Store {
 }
 
 export const newLadder = (now: number): Ladder => ({
+  season: SEASON,
   rating: START_RATING,
   games: 0,
   wins: 0,
@@ -171,6 +179,11 @@ export class MemoryStore implements Store {
 
   async shownHistory(shownBy: number) {
     return (await this.recentGames(Number.MAX_SAFE_INTEGER, shownBy)).reverse();
+  }
+
+  async clearGames() {
+    this.games = [];
+    this.plies = [];
   }
 
   async listGames(f: GameFilter) {
