@@ -1377,13 +1377,11 @@ button:focus-visible {
   }
 }
 
-/* Update log: one card per change to how Jev plays. */
+/* Update log: a changelog timeline, one release per change to how Jev plays. */
 .changes {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 16px;
 }
 
 .changes .empty {
@@ -1391,55 +1389,113 @@ button:focus-visible {
 }
 
 .change {
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 0 32px;
 }
 
 .change-when {
-  margin: 0;
-  font: 500 12px / 1 var(--mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+  text-align: right;
+  font: 500 12px / 1.2 var(--mono);
   color: var(--ink-soft);
 }
 
-.change-title {
-  margin: 10px 0 0;
-  font: 600 22px / 1.2 var(--display);
-  letter-spacing: -0.01em;
+.change-when time {
+  font: 600 14px / 1.2 var(--display);
+  color: var(--ink);
 }
 
-.change-body {
-  margin: 8px 0 0;
-  max-width: 68ch;
+/* The rule and dot of the timeline. */
+.change-main {
+  position: relative;
+  padding: 0 0 36px 28px;
+  border-left: 2px solid var(--rule);
+}
+
+.change:last-child .change-main {
+  padding-bottom: 0;
+}
+
+.change-main::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--jev);
+}
+
+.change:first-child .change-main::before {
+  background: var(--jev);
+}
+
+.change-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.change-items li {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  max-width: 72ch;
+}
+
+.change-kind {
+  justify-self: start;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font: 600 11px / 1 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.change-kind.added {
+  background: color-mix(in srgb, var(--good) 16%, transparent);
+  color: var(--good);
+}
+
+.change-kind.changed {
+  background: var(--jev-wash);
+  color: var(--jev);
 }
 
 .change-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 8px;
-  margin: 16px 0 0;
-}
-
-.change-stats div {
-  padding: 10px 12px;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-}
-
-.change-stats dt {
-  font: 500 11px / 1 var(--mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  margin: 14px 0 0;
+  font: 500 12px / 1.6 var(--mono);
   color: var(--ink-soft);
 }
 
-.change-stats dd {
-  margin: 6px 0 0;
-  font: 600 16px / 1.3 var(--display);
-  font-variant-numeric: tabular-nums;
+@media (max-width: 640px) {
+  .change {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .change-when {
+    flex-direction: row;
+    gap: 10px;
+    text-align: left;
+    padding: 0 0 8px 28px;
+    border-left: 2px solid var(--rule);
+  }
+  .change-items li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  /* The dot marks the date line above the changes. */
+  .change-main::before {
+    top: -24px;
+  }
 }
 
 /* How it works: prose on its own spacious page. */

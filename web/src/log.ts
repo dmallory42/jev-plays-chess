@@ -14,7 +14,7 @@ const record = (games: Summary["history"]) => {
 };
 const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "±0");
 
-// Each change with where Jev stood when it went live, and how Jev has done with it until the next change.
+// Each release as a timeline entry: what changed, where Jev stood when it went live, and how it did until the next.
 function render(history: Summary["history"]) {
   const changes = [...CHANGES].sort((a, b) => b.fromGame - a.fromGame);
   $("changes").innerHTML = changes
@@ -24,20 +24,17 @@ function render(history: Summary["history"]) {
       const during = history.filter((g) => g.id >= c.fromGame && g.id < until);
       const ratingThen = before.at(-1)?.rating ?? START_RATING;
       const change = (during.at(-1)?.rating ?? ratingThen) - ratingThen;
-      const stat = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
-      const stats = [
-        stat("Rating then", String(ratingThen)),
-        stat("Record then", before.length ? `${record(before)}` : "No games yet"),
-        stat(
-          i === 0 ? "Since" : "With this version",
-          during.length ? `${during.length} ${during.length === 1 ? "game" : "games"} · ${record(during)} · <span class="${change > 0 ? "delta-up" : change < 0 ? "delta-down" : ""}">${signed(change)}</span>` : "No games yet",
-        ),
-      ];
+      const then = `Rating ${ratingThen}${before.length ? ` · ${record(before)}` : ""}`;
+      const since = during.length
+        ? `${i === 0 ? "Since" : "Then"}: ${during.length} ${during.length === 1 ? "game" : "games"} · ${record(during)} · <span class="${change > 0 ? "delta-up" : change < 0 ? "delta-down" : ""}">${signed(change)}</span>`
+        : "No games yet";
+      const items = c.items.map((it) => `<li><span class="change-kind ${it.kind.toLowerCase()}">${it.kind}</span><span>${it.text}</span></li>`).join("");
       return `<li class="change">
-        <p class="change-when">${c.date} · from game ${c.fromGame}</p>
-        <h2 class="change-title">${c.title}</h2>
-        <p class="change-body">${c.body}</p>
-        <dl class="change-stats">${stats.join("")}</dl>
+        <div class="change-when"><time>${c.date}</time><span>from game ${c.fromGame}</span></div>
+        <div class="change-main">
+          <ul class="change-items">${items}</ul>
+          <p class="change-stats">${then}<br>${since}</p>
+        </div>
       </li>`;
     })
     .join("");
