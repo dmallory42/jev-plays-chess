@@ -31,6 +31,8 @@ export interface RunnerDeps {
   budgetMs: number;
   /** Viewers see one ply this often. */
   plyIntervalMs: number;
+  /** Extra time after each of Jev's plies, while viewers see its options on the board before its piece moves. */
+  jevThinkMs?: number;
   /** Pause shown between games. */
   gameGapMs: number;
   /** Don't compute further ahead of the viewer clock than this. */
@@ -205,7 +207,7 @@ export async function tick(deps: RunnerDeps): Promise<TickResult> {
       chess.move(ply.san);
       const showAt = Math.max(now(), ladder.nextShowAt);
       await deps.store.addPly({ ...ply, fen: chess.fen(), showAt });
-      ladder.nextShowAt = showAt + deps.plyIntervalMs;
+      ladder.nextShowAt = showAt + deps.plyIntervalMs + (ply.side === "jev" ? (deps.jevThinkMs ?? 0) : 0);
       game.plies = plies.length + 1;
       await deps.store.updateGame(game);
       await deps.store.saveLadder(ladder);

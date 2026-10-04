@@ -69,8 +69,9 @@ interface Summary {
 type View = { kind: "live" } | { kind: "review"; game: Game; plies: Ply[]; cursor: number; loading?: boolean };
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-// How long Jev's options are shown on the board before its piece moves.
-const THINK_MS = 1200;
+// How long Jev's options are shown on the board before its piece moves. The server leaves the same time
+// (jevThinkMs in src/server/app.ts) before Maia's reply.
+const THINK_MS = 2200;
 const POLL_MS = 1500;
 const CHECK_IN_MS = 10_000;
 

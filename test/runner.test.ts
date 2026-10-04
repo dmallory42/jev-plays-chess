@@ -52,6 +52,17 @@ describe("elo", () => {
 });
 
 describe("tick", () => {
+  it("leaves extra time after Jev's plies only", async () => {
+    const store = new MemoryStore();
+    const clock = { t: 1_000_000 };
+    await store.saveLadder({ ...(await store.getLadder()), nextShowAt: clock.t });
+    await tick(deps(store, clock, { jevThinkMs: 2_200 }));
+    const [first, second, third] = await store.getPlies(1);
+    expect(first!.side).toBe("jev");
+    expect(second!.showAt - first!.showAt).toBe(5_200);
+    expect(third!.showAt - second!.showAt).toBe(3_000);
+  });
+
   it("paces plies for viewers and stops when far enough ahead", async () => {
     const store = new MemoryStore();
     const clock = { t: 1_000_000 };

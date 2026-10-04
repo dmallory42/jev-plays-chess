@@ -62,6 +62,8 @@ export async function handleApi(request: Request, config: AppConfig): Promise<Re
       opponent: config.opponent ?? maiaOpponent(url.origin),
       budgetMs: 15_000,
       plyIntervalMs: 3_000,
+      // Matches THINK_MS in web/src/main.ts, so Maia replies 3 seconds after Jev's piece moves.
+      jevThinkMs: 2_200,
       gameGapMs: 12_000,
       maxAheadMs: 60_000,
     });

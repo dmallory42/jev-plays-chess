@@ -7,7 +7,7 @@ Jev, TypeSafe AI's decision model, plays chess nonstop against [Maia-3](https://
 - Each turn, `src/core/facts.ts` lists every legal move with facts about it: captures, checks, material won or lost on that square, pieces left open to capture, threats. Nothing looks ahead to the opponent's reply.
 - `src/core/jev.ts` sends the position and the moves to Jev as one Choice question. Jev picks a move and returns a probability for every option.
 - The opponent is Maia-3 (5M), run in plain TypeScript by [maia3-ts](https://github.com/dmallory42/maia3-ts), so it fits in small serverless workers.
-- `src/core/runner.ts` plays the games, paces the moves for viewers (one every 3 seconds, at most 60 seconds ahead) and updates the rating after each game.
+- `src/core/runner.ts` plays the games, paces the moves for viewers (3 seconds apart, plus 2.2 seconds while Jev's options show on the board, at most 60 seconds ahead) and updates the rating after each game.
 - The viewer's evaluation bar runs Stockfish (lite, single-threaded WASM) in the browser. It's display only and never reaches Jev.
 
 ## Running it
