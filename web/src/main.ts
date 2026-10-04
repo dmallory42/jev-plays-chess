@@ -116,7 +116,8 @@ let recentGames: Game[] = [];
 let listedGames: Game[] = [];
 let listFilter = "";
 let listHasMore = false;
-let listNewest = 0;
+// -1 until the first summary, so the list always loads once even before any game has finished.
+let listNewest = -1;
 let listRequest = 0;
 
 // Starts loading a finished game (once), for clicks, hovers and idle prefetching.
