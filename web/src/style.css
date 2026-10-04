@@ -227,6 +227,35 @@ button:focus-visible {
   color: var(--maia);
 }
 
+/* Pieces each player has taken, same kinds overlapping, and the material lead. */
+.captured {
+  display: inline-flex;
+  align-self: center;
+  margin-left: 6px;
+}
+
+.captured .pc {
+  width: 20px;
+  height: 20px;
+  margin-left: -9px;
+}
+
+.captured .pc:first-child {
+  margin-left: 0;
+}
+
+.captured-q + :not(.captured-q),
+.captured-r + :not(.captured-r),
+.captured-b + :not(.captured-b),
+.captured-n + :not(.captured-n) {
+  margin-left: 2px;
+}
+
+.material-ahead {
+  font: 600 13px / 1 var(--mono);
+  color: var(--ink-soft);
+}
+
 .player-meta {
   font: 500 14px / 1 var(--mono);
   color: var(--ink-soft);

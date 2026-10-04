@@ -2,6 +2,7 @@ import "./theme";
 import { drawArrows, drawBoard, drawHeat, type Arrow } from "./board";
 import { nag, rate, type Rating } from "./annotate";
 import { Engine, scoreLabel, whiteShare, type Evaluation } from "./eval";
+import { captures } from "./material";
 import { figurine, icon, pieceIcon, tagChips, type Colour, type PieceType, type Tag } from "./notation";
 
 interface Option {
@@ -159,8 +160,15 @@ function renderPlayers() {
   const toMove = cursor % 2 === 0 ? "w" : "b";
   const oppColour = game.jevColor === "w" ? "b" : "w";
   const over = game.result !== null && (live || cursor === game.plies);
+  const { taken, balance } = captures(current().plies[cursor - 1]?.fen ?? START_FEN);
+  // The pieces a side has taken are in its opponent's colour; the side ahead also shows by how much.
+  const material = (colour: Colour) => {
+    const ahead = colour === "w" ? balance : -balance;
+    const icons = taken[colour].map((t) => pieceIcon(colour === "w" ? "b" : "w", t, `pc captured-${t}`)).join("");
+    return `<span class="captured">${icons}</span>${ahead > 0 ? `<span class="material-ahead" title="Ahead by ${ahead} in material">+${ahead}</span>` : ""}`;
+  };
   const strip = (name: string, cls: string, colour: Colour, rating: number) =>
-    `<span class="swatch ${colour}" title="${colour === "w" ? "White" : "Black"}"></span><span class="player-name ${cls}">${name}</span><span class="player-meta">${rating}</span>${!over && toMove === colour ? `<span class="to-move-dot" title="To move"></span>` : ""}`;
+    `<span class="swatch ${colour}" title="${colour === "w" ? "White" : "Black"}"></span><span class="player-name ${cls}">${name}</span><span class="player-meta">${rating}</span>${!over && toMove === colour ? `<span class="to-move-dot" title="To move"></span>` : ""}${material(colour)}`;
   top.innerHTML = strip("Maia", "is-maia", oppColour, game.oppElo);
   bottom.innerHTML = strip("Jev", "is-jev", game.jevColor, Math.round(game.ratingBefore));
 }
