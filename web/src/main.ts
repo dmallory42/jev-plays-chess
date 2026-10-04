@@ -710,7 +710,7 @@ function renderLadder(s: Summary) {
 
 const scoreOf = (g: Game) => (g.result === "1/2-1/2" ? 0.5 : (g.result === "1-0") === (g.jevColor === "w") ? 1 : 0);
 
-// The last 20 results as squares, oldest first, with the current run.
+// The last 20 results as squares, oldest first.
 function renderForm(history: Summary["history"]) {
   const form = $("form");
   const last = history.slice(-20);
@@ -718,13 +718,9 @@ function renderForm(history: Summary["history"]) {
   if (!last.length) return;
   const word = (s: number) => (s === 1 ? "win" : s === 0 ? "loss" : "draw");
   const count = (s: number) => last.filter((h) => h.score === s).length;
-  let run = 0;
-  while (run < last.length && last[last.length - 1 - run]!.score === last.at(-1)!.score) run++;
-  const verb = { 1: "won", 0: "lost", 0.5: "drew" }[last.at(-1)!.score as 0 | 0.5 | 1];
-  const streak = run > 1 ? `${verb} the last ${run}` : `${verb} the latest`;
   form.innerHTML = `<span class="form-squares" role="img" aria-label="Last ${last.length} results, oldest first: ${count(1)} wins, ${count(0.5)} draws, ${count(0)} losses">${last
     .map((h) => `<span class="form-sq ${word(h.score)}" title="Game ${h.id}: ${word(h.score)}"></span>`)
-    .join("")}</span><span class="form-text">last ${last.length}: <b class="delta-up">${count(1)} W</b> · <b>${count(0.5)} D</b> · <b class="delta-down">${count(0)} L</b> · ${streak}</span>`;
+    .join("")}</span><span class="form-text">last ${last.length}: <b class="delta-up">${count(1)} W</b> · <b>${count(0.5)} D</b> · <b class="delta-down">${count(0)} L</b></span>`;
 }
 
 function renderGames() {
