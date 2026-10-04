@@ -1,4 +1,5 @@
 import { START_RATING } from "./elo";
+import { classifyOpening, OPENING_NAME_PLIES } from "./openings";
 import { jevScore } from "./runner";
 import type { GameRow, PlyRow, Store } from "./store";
 
@@ -60,4 +61,20 @@ export async function liveView(store: Store, now: number, knownGame: number | nu
     plies: plies.map(plyView),
     nextShowAt: await store.nextShowAt(now),
   };
+}
+
+/** Jev's record in each named opening it has reached, per colour, most played first. */
+export async function openingRecordView(store: Store, now: number) {
+  const [games, moves] = await Promise.all([store.shownHistory(now), store.openingMoves(OPENING_NAME_PLIES, now)]);
+  const records = new Map<string, { side: "w" | "b"; eco: string; name: string; family: string; games: number; points: number }>();
+  for (const g of games) {
+    if (!g.result) continue;
+    const opening = classifyOpening(moves.get(g.id) ?? []) ?? { eco: "", name: "Unnamed line", family: "Unnamed line" };
+    const key = `${g.jevColor}:${opening.name}`;
+    const r = records.get(key) ?? { side: g.jevColor, ...opening, games: 0, points: 0 };
+    r.games++;
+    r.points += jevScore(g.result, g.jevColor);
+    records.set(key, r);
+  }
+  return [...records.values()].sort((a, b) => b.games - a.games || a.name.localeCompare(b.name));
 }

@@ -1051,6 +1051,12 @@ button:focus-visible {
   margin: 0 0 40px;
 }
 
+.learned-note {
+  margin: -6px 0 16px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
 .learned section + section {
   margin-top: 48px;
 }
@@ -1138,31 +1144,43 @@ button:focus-visible {
   border-top: 1px solid var(--rule);
 }
 
-.opening-list li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 76px 44px;
-  gap: 12px;
-  align-items: center;
-  padding: 8px 0;
+.opening-list > li {
+  padding: 10px 0;
   border-bottom: 1px solid var(--rule);
-  font-size: 15px;
-  font-variant-numeric: tabular-nums;
 }
 
 .opening-list li.empty {
-  display: block;
   color: var(--ink-soft);
 }
 
-.opening-line .num {
-  color: var(--ink-soft);
-  margin-right: 2px;
+.opening-row,
+.opening-variations li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px 44px;
+  gap: 12px;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
 }
 
-.opening-line .pc {
-  width: 1.2em;
-  height: 1.2em;
-  vertical-align: -0.25em;
+.opening-family {
+  font-weight: 600;
+}
+
+.opening-eco {
+  margin-left: 4px;
+  font: 500 12px / 1 var(--mono);
+  color: var(--ink-soft);
+}
+
+.opening-variations {
+  list-style: none;
+  margin: 8px 0 2px;
+  padding: 0 0 0 12px;
+  border-left: 2px solid var(--rule);
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--ink-soft);
 }
 
 .opening-games {

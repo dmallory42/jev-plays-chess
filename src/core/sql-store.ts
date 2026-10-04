@@ -298,6 +298,23 @@ export class SqlStore implements Store, Memory {
     return results.map(toGame);
   }
 
+  async openingMoves(plies: number, shownBy: number) {
+    const { results } = await this.db
+      .prepare(
+        "SELECT p.game_id, p.san FROM plies p JOIN games g ON g.id = p.game_id WHERE g.ended_show_at IS NOT NULL AND g.ended_show_at <= ? AND p.ply < ? ORDER BY p.game_id, p.ply",
+      )
+      .bind(shownBy, plies)
+      .all<{ game_id: number; san: string }>();
+    const out = new Map<number, string[]>();
+    for (const r of results) {
+      const id = Number(r.game_id);
+      const list = out.get(id) ?? [];
+      list.push(r.san);
+      out.set(id, list);
+    }
+    return out;
+  }
+
   async nextShowAt(shownBy: number) {
     const r = await this.db.prepare("SELECT MIN(show_at) AS t FROM plies WHERE show_at > ?").bind(shownBy).first<{ t: number | null }>();
     return num(r?.t);

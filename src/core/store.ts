@@ -65,6 +65,8 @@ export interface Store {
   nextShowAt(shownBy: number): Promise<number | null>;
   /** Finished games viewers have seen, oldest first, for the record and rating chart. */
   shownHistory(shownBy: number): Promise<GameRow[]>;
+  /** The first `plies` moves (SAN) of each finished game viewers have seen, keyed by game id. */
+  openingMoves(plies: number, shownBy: number): Promise<Map<number, string[]>>;
   /** Records that a viewer's page is open, and drops long-gone viewers. */
   touchViewer(id: string, now: number): Promise<void>;
   countViewers(since: number): Promise<number>;
@@ -158,6 +160,14 @@ export class MemoryStore implements Store {
 
   async shownHistory(shownBy: number) {
     return (await this.recentGames(Number.MAX_SAFE_INTEGER, shownBy)).reverse();
+  }
+
+  async openingMoves(plies: number, shownBy: number) {
+    const out = new Map<number, string[]>();
+    for (const g of await this.shownHistory(shownBy)) {
+      out.set(g.id, (await this.getPlies(g.id)).filter((p) => p.ply < plies).map((p) => p.san));
+    }
+    return out;
   }
 
   async nextShowAt(shownBy: number) {

@@ -6,7 +6,7 @@ import { maiaOpponent } from "../core/maia-opponent";
 import { FLAG_MIN_PLAYED, recall } from "../core/memory";
 import { tick, type RunnerDeps } from "../core/runner";
 import { SqlStore, type D1Like, type Dialect } from "../core/sql-store";
-import { gameView, liveView, plyView, summaryView } from "../core/views";
+import { gameView, liveView, openingRecordView, plyView, summaryView } from "../core/views";
 
 export interface AppConfig {
   db: D1Like;
@@ -89,9 +89,9 @@ export async function handleApi(request: Request, config: AppConfig): Promise<Re
     return json({ game: gameView(game), plies: plies.map(plyView) }, { headers: { "cache-control": "public, max-age=31536000, immutable" } });
   }
 
-  // What Jev has learned: the kinds of move that keep going wrong, and its record with each opening line.
+  // What Jev has learned: the kinds of move that keep going wrong, and its record in each named opening.
   if (route === "memory") {
-    const [patterns, openings] = await Promise.all([store.allPatterns(FLAG_MIN_PLAYED, 40), store.allOpenings(2, 300)]);
+    const [patterns, openings] = await Promise.all([store.allPatterns(FLAG_MIN_PLAYED, 40), openingRecordView(store, now)]);
     return json({ patterns, openings }, { headers: { "cache-control": "public, max-age=60" } });
   }
 
