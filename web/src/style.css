@@ -46,6 +46,11 @@
   box-sizing: border-box;
 }
 
+/* Classes that set display would otherwise override the hidden attribute. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   background: var(--paper);
