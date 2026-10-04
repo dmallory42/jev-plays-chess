@@ -1010,11 +1010,13 @@ button:focus-visible {
   fill: var(--ink-soft);
 }
 
+/* Shown instead of the chart until a game has finished, styled like the games list's empty state. */
 .ladder-note {
-  font-size: 14px;
+  margin: 0;
+  padding: 32px 0 16px;
+  text-align: center;
+  font: 500 14px / 1.4 var(--mono);
   color: var(--ink-soft);
-  max-width: 60ch;
-  margin: 8px 0 0;
 }
 
 .games {

@@ -711,7 +711,7 @@ function renderLadder(s: Summary) {
   svg.style.display = s.history.length === 0 ? "none" : "";
   const note = $("ladder-note");
   note.hidden = s.history.length > 0;
-  note.textContent = "Starts after the first game.";
+  note.textContent = "No rating history yet";
   if (s.history.length === 0) return;
   const points = [{ id: 0, rating: START_RATING, score: -1 }, ...s.history];
   const W = 600;
