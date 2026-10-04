@@ -1596,8 +1596,18 @@ button:focus-visible {
     padding-top: 0;
   }
   .masthead {
-    align-items: flex-start;
-    flex-direction: column;
+    flex-wrap: wrap;
+  }
+  /* On a phone: wordmark and theme switch on the first row, the rating on its own row below. */
+  .masthead-end {
+    display: contents;
+  }
+  .masthead .theme-toggle {
+    order: 2;
+  }
+  .masthead .standing {
+    order: 3;
+    flex-basis: 100%;
   }
   .game-list a {
     grid-template-columns: 32px 14px 14px minmax(0, 1fr) 44px;
