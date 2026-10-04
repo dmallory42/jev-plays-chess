@@ -46,6 +46,16 @@
   box-sizing: border-box;
 }
 
+/* Areas that wait for their first data fade in instead of flashing placeholder text. */
+.stage,
+.standing {
+  transition: opacity 200ms ease-out;
+}
+
+.is-booting {
+  opacity: 0;
+}
+
 /* Classes that set display would otherwise override the hidden attribute. */
 [hidden] {
   display: none !important;

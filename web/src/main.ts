@@ -555,6 +555,8 @@ async function poll() {
   } catch (e) {
     console.warn(e);
   } finally {
+    // The board and panel stay hidden until the first answer, so the page never flashes an empty start position.
+    document.querySelector(".stage")?.classList.remove("is-booting");
     setTimeout(poll, POLL_MS);
   }
 }
@@ -858,6 +860,8 @@ async function refreshSummary() {
     idle(() => s.recent.slice(0, 3).forEach((g) => void fetchGame(g.id).catch(() => {})));
   } catch (e) {
     console.warn(e);
+  } finally {
+    document.querySelector(".standing")?.classList.remove("is-booting");
   }
 }
 
