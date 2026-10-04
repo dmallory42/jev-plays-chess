@@ -1,3 +1,4 @@
+import "./theme";
 import { figurine } from "./notation";
 
 interface Pattern {

@@ -1,3 +1,4 @@
+import "./theme";
 import { drawArrows, drawBoard, drawHeat, type Arrow } from "./board";
 import { nag, rate, type Rating } from "./annotate";
 import { Engine, scoreLabel, whiteShare, type Evaluation } from "./eval";

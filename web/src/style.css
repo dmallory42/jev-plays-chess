@@ -21,26 +21,25 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #0b0f19;
-    --panel: #131a28;
-    --ink: #e6ebf4;
-    --ink-soft: #97a2b8;
-    --rule: #253049;
-    --light-sq: #c6cfdf;
-    --dark-sq: #7a879f;
-    --coord: #1e2638;
-    --jev: #7c96ff;
-    --jev-soft: #3b4e93;
-    --jev-wash: #18224a;
-    --on-jev: #0b0f19;
-    --maia: #ff9457;
-    --maia-soft: #5a3420;
-    --good: #4cc38a;
-    --bad: #ff7a6e;
-    color-scheme: dark;
-  }
+/* Light by default; the header toggle switches to dark and remembers the choice. */
+:root[data-theme="dark"] {
+  --paper: #0b0f19;
+  --panel: #131a28;
+  --ink: #e6ebf4;
+  --ink-soft: #97a2b8;
+  --rule: #253049;
+  --light-sq: #c6cfdf;
+  --dark-sq: #7a879f;
+  --coord: #1e2638;
+  --jev: #7c96ff;
+  --jev-soft: #3b4e93;
+  --jev-wash: #18224a;
+  --on-jev: #0b0f19;
+  --maia: #ff9457;
+  --maia-soft: #5a3420;
+  --good: #4cc38a;
+  --bad: #ff7a6e;
+  color-scheme: dark;
 }
 
 * {
@@ -95,6 +94,35 @@ button:focus-visible {
 
 .wordmark span {
   color: var(--jev);
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--ink-soft);
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.masthead-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
 }
 
 .standing {
@@ -590,16 +618,14 @@ button:focus-visible {
   color: var(--paper);
 }
 
-@media (prefers-color-scheme: dark) {
-  .chip.good {
-    color: #7fd19b;
-  }
-  .chip.bad {
-    color: #f08a7e;
-  }
-  .chip.threat {
-    color: #f3c27a;
-  }
+:root[data-theme="dark"] .chip.good {
+  color: #7fd19b;
+}
+:root[data-theme="dark"] .chip.bad {
+  color: #f08a7e;
+}
+:root[data-theme="dark"] .chip.threat {
+  color: #f3c27a;
 }
 
 .before {

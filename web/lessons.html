@@ -10,10 +10,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch {}
+    </script>
   </head>
   <body>
     <header class="masthead">
       <a class="wordmark" href="/" aria-label="Jev plays chess, home">jev<span>/</span>chess</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode"></button>
     </header>
     <main class="learned">
       <h1 class="learned-title">What Jev has learned</h1>

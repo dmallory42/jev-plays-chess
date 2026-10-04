@@ -10,10 +10,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch {}
+    </script>
   </head>
   <body>
     <header class="masthead">
       <a class="wordmark" href="/" aria-label="Jev plays chess, home">jev<span>/</span>chess</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode"></button>
     </header>
     <article class="prose">
       <h1>How it works</h1>
@@ -110,5 +116,6 @@
         Jev by <a href="https://typesafe.ai/">TypeSafe AI</a>. Maia-3 by the <a href="https://github.com/CSSLab/maia3">CSSLab at the University of Toronto</a>, running in <a href="https://github.com/dmallory42/maia3-ts">maia3-ts</a> (AGPL-3.0). Chess pieces by Colin M.L. Burnett (GPLv2+). Evaluation by Stockfish (GPLv3). Inspired by <a href="https://jev-pokemon.vercel.app/">Jev plays Pokémon</a>. This project is <a href="https://github.com/dmallory42/jev-plays-chess">open source</a> under the GPL-2.0 or later.
       </p>
     </article>
+    <script type="module" src="/src/theme.ts"></script>
   </body>
 </html>

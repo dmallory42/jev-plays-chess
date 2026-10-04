@@ -10,6 +10,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch {}
+    </script>
   </head>
   <body>
     <header class="masthead">
@@ -17,13 +22,16 @@
         <a class="wordmark" href="/" aria-label="Jev plays chess, home">jev<span>/</span>chess</a>
         <span class="watching" id="watching" hidden></span>
       </div>
-      <div class="standing" aria-live="polite">
-        <span class="standing-label">Rating</span>
-        <span class="standing-rating" id="rating">–</span>
-        <span class="standing-detail">
-          <span id="rating-delta"></span>
-          <span id="record">No games finished yet</span>
-        </span>
+      <div class="masthead-end">
+        <div class="standing" aria-live="polite">
+          <span class="standing-label">Rating</span>
+          <span class="standing-rating" id="rating">–</span>
+          <span class="standing-detail">
+            <span id="rating-delta"></span>
+            <span id="record">No games finished yet</span>
+          </span>
+        </div>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode"></button>
       </div>
     </header>
 
