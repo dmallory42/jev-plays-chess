@@ -257,11 +257,23 @@ function renderMind(ply: Ply | undefined, thinking: boolean) {
   panelKey = ply && game ? `${game.id}:${ply.ply}` : null;
   before.hidden = true;
 
+  const hint = $("move-hint");
+  hint.hidden = true;
+
+  // No Jev move to explain yet: say what the board is waiting for.
   if (!ply) {
     const loading = view.kind === "review" && view.loading;
-    $("move-no").textContent = view.kind === "review" && !loading ? "Start of the game" : "";
-    san.classList.add("is-idle");
-    san.textContent = loading ? "Loading…" : view.kind === "review" ? "Step forward to replay" : game ? "First move coming" : "Waiting for the next game";
+    const idle = (label: string, text: string, detail = "") => {
+      $("move-no").textContent = label;
+      san.classList.add("is-idle");
+      san.textContent = text;
+      hint.textContent = detail;
+      hint.hidden = !detail;
+    };
+    if (loading) idle(game ? `Game ${game.id}` : "Replay", "Loading the moves…");
+    else if (view.kind === "review") idle(`Game ${view.game.id} · start`, "Step forward to replay", "Use the arrows under the board, or the arrow keys.");
+    else if (game) idle(`Game ${game.id}`, game.jevColor === "w" ? "Jev is choosing its first move" : "Jev is choosing its reply", "Its options appear on the board before it plays.");
+    else idle("Live", "Waiting for the next game", "Games start a few seconds apart.");
     weighed.hidden = true;
     return;
   }
@@ -346,10 +358,12 @@ function renderBanner() {
     return;
   }
   const jevWon = (game.result === "1-0") === (game.jevColor === "w") && game.result !== "1/2-1/2";
-  const headline = game.result === "1/2-1/2" ? "Draw" : jevWon ? "Jev wins" : "Maia wins";
+  const [headline, cls] = game.result === "1/2-1/2" ? ["Draw", "draw"] : jevWon ? ["Jev wins", "win"] : ["Maia wins", "loss"];
   const change = game.ratingAfter !== null ? Math.round(game.ratingAfter - game.ratingBefore) : 0;
   const how = game.termination === "resignation" ? `${jevWon ? "Maia" : "Jev"} resigned` : `By ${game.termination}`;
-  banner.innerHTML = `${headline}<small>${how}. Rating ${Math.round(game.ratingBefore)} to ${game.ratingAfter} (${change >= 0 ? "+" : ""}${change}).${live ? " Next game shortly." : ""}</small>`;
+  const signed = change > 0 ? `+${change}` : change < 0 ? `−${-change}` : "±0";
+  banner.className = `board-banner ${cls}`;
+  banner.innerHTML = `<span class="banner-label">Game ${game.id}${live ? " · next game shortly" : ""}</span><strong>${headline}</strong><small>${how} · rating ${Math.round(game.ratingBefore)} → ${game.ratingAfter} (${signed})</small>`;
   banner.hidden = false;
   if (live && bannerShownFor !== game.id) {
     bannerShownFor = game.id;

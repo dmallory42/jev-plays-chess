@@ -432,11 +432,11 @@ button:focus-visible {
 }
 .board .last-move {
   fill: var(--jev);
-  opacity: 0.28;
+  opacity: 0.22;
 }
 .board .last-move.by-maia {
   fill: var(--maia);
-  opacity: 0.32;
+  opacity: 0.18;
 }
 
 .board .piece {
@@ -461,26 +461,48 @@ button:focus-visible {
   fill: var(--on-jev);
 }
 
+/* Result card over the board when a game ends: a readout, in the result's colour. */
 .board-banner {
   position: absolute;
-  inset: auto 0 44% 0;
+  inset: auto 0 40% 0;
   margin-inline: auto;
   width: fit-content;
-  max-width: 90%;
-  padding: 14px 22px;
+  max-width: 88%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 24px;
   background: var(--panel);
-  border-radius: 6px;
-  box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+  border: 1px solid var(--rule);
+  border-top: 4px solid var(--ink-soft);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgb(15 23 41 / 0.12);
   text-align: center;
-  font: 600 24px / 1.15 var(--display);
-  letter-spacing: -0.01em;
+}
+
+.board-banner.win {
+  border-top-color: var(--good);
+}
+.board-banner.loss {
+  border-top-color: var(--bad);
+}
+
+.banner-label {
+  font: 500 11px / 1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.board-banner strong {
+  font: 600 28px / 1.1 var(--display);
+  letter-spacing: -0.02em;
 }
 
 .board-banner small {
-  display: block;
-  font: 500 15px / 1.4 var(--body);
+  font: 500 13px / 1.4 var(--mono);
   color: var(--ink-soft);
-  margin-top: 4px;
 }
 
 /* Readout panels. */
@@ -541,8 +563,14 @@ button:focus-visible {
   color: var(--maia);
 }
 
+.move-hint {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
 .move-san.is-idle {
-  font-size: 30px;
+  font-size: 24px;
   letter-spacing: -0.01em;
   color: var(--ink);
 }
