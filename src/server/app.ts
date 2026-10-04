@@ -87,13 +87,17 @@ export async function handleApi(request: Request, config: AppConfig): Promise<Re
     const before = Number(q.get("before"));
     const colour = q.get("colour");
     const outcome = q.get("outcome");
+    const beforeId = Number.isInteger(before) && before > 0 ? before : undefined;
+    // Older pages never change, so CDNs can keep them; the first page gains a game every few minutes.
+    const cache = beforeId ? "public, max-age=300" : "public, max-age=15";
     return json(
       await gameListView(store, now, {
         limit: 20,
-        beforeId: Number.isInteger(before) && before > 0 ? before : undefined,
+        beforeId,
         colour: colour === "w" || colour === "b" ? colour : undefined,
         outcome: outcome === "win" || outcome === "draw" || outcome === "loss" ? outcome : undefined,
       }),
+      { headers: { "cache-control": cache } },
     );
   }
 

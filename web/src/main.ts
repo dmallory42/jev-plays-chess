@@ -678,6 +678,7 @@ function renderSummary(s: Summary) {
   const newest = s.recent[0]?.id ?? 0;
   if (newest !== listNewest) {
     listNewest = newest;
+    pageCache.clear();
     void loadGames();
   }
 }
@@ -752,15 +753,39 @@ function renderGames() {
     .join("");
 }
 
+type GamePage = { games: Game[]; more: boolean };
+// First pages by filter, so switching back to a filter is instant. Cleared when a new game finishes.
+const pageCache = new Map<string, Promise<GamePage>>();
+
+function firstPage(filter: string) {
+  let page = pageCache.get(filter);
+  if (!page) {
+    page = getJson<GamePage>(`/api/history?${new URLSearchParams(filter)}`);
+    // A failed request isn't kept, so the next attempt tries again.
+    page.catch(() => pageCache.delete(filter));
+    pageCache.set(filter, page);
+  }
+  return page;
+}
+
 // Loads the first page for the current filter, or the next page after what's shown.
 async function loadGames(more = false) {
   const request = ++listRequest;
-  const params = new URLSearchParams(listFilter);
-  if (more && listedGames.length) params.set("before", String(listedGames.at(-1)!.id));
+  const list = $("game-list");
   const button = $<HTMLButtonElement>("more-games");
   button.disabled = true;
+  // Fade the old list only if the answer isn't already here, so cached filters don't flicker.
+  const slow = window.setTimeout(() => list.classList.add("is-loading"), 80);
+  list.setAttribute("aria-busy", "true");
   try {
-    const page = await getJson<{ games: Game[]; more: boolean }>(`/api/history?${params}`);
+    let page: GamePage;
+    if (more && listedGames.length) {
+      const params = new URLSearchParams(listFilter);
+      params.set("before", String(listedGames.at(-1)!.id));
+      page = await getJson<GamePage>(`/api/history?${params}`);
+    } else {
+      page = await firstPage(listFilter);
+    }
     // A newer request (another filter, or a refresh) wins.
     if (request !== listRequest) return;
     listedGames = more ? [...listedGames, ...page.games] : page.games;
@@ -769,7 +794,12 @@ async function loadGames(more = false) {
   } catch (e) {
     console.warn(e);
   } finally {
-    button.disabled = false;
+    if (request === listRequest) {
+      window.clearTimeout(slow);
+      list.classList.remove("is-loading");
+      list.removeAttribute("aria-busy");
+      button.disabled = false;
+    }
   }
 }
 
@@ -780,6 +810,17 @@ $("game-filters").addEventListener("click", (e) => {
   for (const b of $("game-filters").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b === button));
   void loadGames();
 });
+// Start fetching a filter when the viewer points at it, so most of the wait is over by the click.
+for (const type of ["pointerover", "focusin", "touchstart"] as const) {
+  $("game-filters").addEventListener(
+    type,
+    (e) => {
+      const filter = (e.target as HTMLElement).closest<HTMLButtonElement>("button[data-filter]")?.dataset.filter;
+      if (filter !== undefined) void firstPage(filter).catch(() => {});
+    },
+    { passive: true },
+  );
+}
 $("more-games").addEventListener("click", () => void loadGames(true));
 
 async function refreshSummary() {

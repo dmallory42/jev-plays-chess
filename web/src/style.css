@@ -1061,6 +1061,14 @@ button:focus-visible {
   color: var(--on-jev);
 }
 
+.game-list {
+  transition: opacity 150ms ease-out;
+}
+
+.game-list.is-loading {
+  opacity: 0.45;
+}
+
 .more-games {
   display: block;
   margin: 16px auto 0;
