@@ -34,8 +34,8 @@ export interface RunnerDeps {
   /** Extra time after each of Jev's plies, while viewers see its options on the board before its piece moves. */
   jevThinkMs?: number;
   /**
-   * In the first `plies` plies, how often Jev plays one of its other options that doesn't lose material instead of
-   * its top pick. Without this, its opening records reinforce whichever line it happened to try first.
+   * In the first `plies` plies, how often Jev plays another move it gave some weight instead of its top pick, as long
+   * as it doesn't lose material. Without this, its opening records reinforce whichever line it happened to try first.
    */
   explore?: { rate: number; plies: number; random?: () => number };
   /** Pause shown between games. */
@@ -73,13 +73,25 @@ export function jevScore(result: Result, jevColor: "w" | "b"): 0 | 0.5 | 1 {
   return (result === "1-0") === (jevColor === "w") ? 1 : 0;
 }
 
-// An opening move to try instead of Jev's top pick, or null to play the pick: any other option that doesn't lose material.
-export function exploreOpening(explore: RunnerDeps["explore"], plyCount: number, picked: string, facts: MoveFacts[]) {
+// Jev must give a move at least this probability for it to be tried.
+const EXPLORE_MIN_P = 0.01;
+
+// An opening move to try instead of Jev's top pick, or null to play the pick. Picks among Jev's other options that
+// don't lose material, in proportion to the probability Jev gave each, so its second choice comes up most.
+export function exploreOpening(explore: RunnerDeps["explore"], plyCount: number, decision: Pick<JevDecision, "san" | "options">, facts: MoveFacts[]) {
   if (!explore || plyCount >= explore.plies) return null;
   const random = explore.random ?? Math.random;
   if (random() >= explore.rate) return null;
-  const others = facts.filter((f) => f.san !== picked && f.netGain >= 0);
-  return others.length ? others[Math.floor(random() * others.length)]! : null;
+  const safe = new Map(facts.filter((f) => f.netGain >= 0).map((f) => [f.san, f]));
+  const others = decision.options.filter((o) => o.san !== decision.san && o.p >= EXPLORE_MIN_P && safe.has(o.san));
+  const total = others.reduce((n, o) => n + o.p, 0);
+  if (!others.length || total <= 0) return null;
+  let r = random() * total;
+  for (const o of others) {
+    r -= o.p;
+    if (r < 0) return safe.get(o.san)!;
+  }
+  return safe.get(others.at(-1)!.san)!;
 }
 
 // Brief facts for the viewer: the chosen move and the top alternatives Jev weighed, plus the move it tried instead, if any.
@@ -201,7 +213,7 @@ export async function tick(deps: RunnerDeps): Promise<TickResult> {
         ladder.jevCalls += 1;
         ladder.jevTokens += decision.inputTokens;
         resigns = shouldResign("jev", decision.resign, lastReading(plies, "jev"), plies.length);
-        const explored = exploreOpening(deps.explore, plies.length, decision.san, facts);
+        const explored = exploreOpening(deps.explore, plies.length, decision, facts);
         const played = explored ?? decision;
         ply = { gameId: game.id, ply: plies.length, side: "jev", san: played.san, uci: played.uci, data: jevPlyData(decision, facts, before, recall, explored?.san) };
       } else {

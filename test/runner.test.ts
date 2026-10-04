@@ -1,7 +1,7 @@
 import { Chess } from "chess.js";
 import { describe, expect, it } from "vitest";
 import { expectedScore, pickOpponentElo, updateRating } from "../src/core/elo";
-import { moveFacts } from "../src/core/facts";
+import { moveFacts, type MoveFacts } from "../src/core/facts";
 import type { JevDecision } from "../src/core/jev";
 import { exploreOpening, jevScore, MIN_RESIGN_PLY, tick, type RunnerDeps } from "../src/core/runner";
 import { MemoryStore } from "../src/core/store";
@@ -52,12 +52,18 @@ describe("elo", () => {
 });
 
 describe("tick", () => {
-  it("sometimes plays another opening option that doesn't lose material, and says so", async () => {
+  it("sometimes plays another option Jev considered in the opening, and says so", async () => {
     const store = new MemoryStore();
     const clock = { t: 1_000_000 };
     await store.saveLadder({ ...(await store.getLadder()), nextShowAt: clock.t });
+    // A Jev that spreads its weight, so every option counts as considered.
+    const spread: RunnerDeps["jev"] = async (chess) => {
+      const facts = moveFacts(chess);
+      const options = facts.map((x, i) => ({ san: x.san, uci: x.uci, p: i === 0 ? 0.5 : 0.5 / (facts.length - 1) }));
+      return { decision: { san: facts[0]!.san, uci: facts[0]!.uci, confidence: 0.5, options, resign: 0, inputTokens: 1000, latencyMs: 100, model: "fake" }, facts };
+    };
     // Always explore, always taking the first other option.
-    await tick(deps(store, clock, { explore: { rate: 1, plies: 2, random: () => 0 } }));
+    await tick(deps(store, clock, { jev: spread, explore: { rate: 1, plies: 2, random: () => 0 } }));
     const [first, second, third] = await store.getPlies(1);
     const data = first!.data as { explored?: boolean; top: { san: string }[] };
     expect(data.explored).toBe(true);
@@ -69,16 +75,25 @@ describe("tick", () => {
     expect((third!.data as { explored?: boolean }).explored).toBeUndefined();
   });
 
-  it("never explores into a move that loses material", () => {
-    const chess = new Chess("4k3/8/8/8/8/8/3q4/4K3 w - - 0 1");
-    const facts = moveFacts(chess);
-    const picked = facts.find((f) => f.san === "Kxd2")!.san;
-    for (let i = 0; i < 20; i++) {
-      const tried = exploreOpening({ rate: 1, plies: 8, random: () => i / 20 }, 0, picked, facts);
-      expect(tried === null || tried.netGain >= 0).toBe(true);
+  it("tries Jev's other options in proportion to the weight it gave them", () => {
+    const facts = (net: Record<string, number>) => Object.entries(net).map(([san, netGain]) => ({ san, netGain })) as unknown as MoveFacts[];
+    const decision = { san: "A", options: [{ san: "A", uci: "", p: 0.7 }, { san: "B", uci: "", p: 0.2 }, { san: "C", uci: "", p: 0.1 }] };
+    const safe = facts({ A: 0, B: 0, C: 0 });
+    // The first draw decides whether to explore; the second picks along B (0.2) then C (0.1).
+    const draws = (pick: number) => { const seq = [0, pick]; return () => seq.shift()!; };
+    expect(exploreOpening({ rate: 1, plies: 8, random: draws(0.5) }, 0, decision, safe)?.san).toBe("B");
+    expect(exploreOpening({ rate: 1, plies: 8, random: draws(0.9) }, 0, decision, safe)?.san).toBe("C");
+    expect(exploreOpening({ rate: 0, plies: 8 }, 0, decision, safe)).toBeNull();
+    expect(exploreOpening({ rate: 1, plies: 8, random: draws(0.5) }, 8, decision, safe)).toBeNull();
+  });
+
+  it("never tries a move that loses material or that Jev barely considered", () => {
+    const facts = [{ san: "A", netGain: 0 }, { san: "B", netGain: -3 }, { san: "C", netGain: 0 }, { san: "D", netGain: 0 }] as unknown as MoveFacts[];
+    const decision = { san: "A", options: [{ san: "A", uci: "", p: 0.6 }, { san: "B", uci: "", p: 0.3 }, { san: "C", uci: "", p: 0.005 }, { san: "D", uci: "", p: 0.095 }] };
+    for (let i = 0; i < 10; i++) {
+      const seq = [0, i / 10];
+      expect(exploreOpening({ rate: 1, plies: 8, random: () => seq.shift()! }, 0, decision, facts)?.san).toBe("D");
     }
-    expect(exploreOpening({ rate: 0, plies: 8 }, 0, picked, facts)).toBeNull();
-    expect(exploreOpening({ rate: 1, plies: 8, random: () => 0 }, 8, picked, facts)).toBeNull();
   });
 
   it("leaves extra time after Jev's plies only", async () => {
