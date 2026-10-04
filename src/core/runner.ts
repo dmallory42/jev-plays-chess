@@ -33,6 +33,11 @@ export interface RunnerDeps {
   plyIntervalMs: number;
   /** Extra time after each of Jev's plies, while viewers see its options on the board before its piece moves. */
   jevThinkMs?: number;
+  /**
+   * In the first `plies` plies, how often Jev plays one of its other options that doesn't lose material instead of
+   * its top pick. Without this, its opening records reinforce whichever line it happened to try first.
+   */
+  explore?: { rate: number; plies: number; random?: () => number };
   /** Pause shown between games. */
   gameGapMs: number;
   /** Don't compute further ahead of the viewer clock than this. */
@@ -68,15 +73,26 @@ export function jevScore(result: Result, jevColor: "w" | "b"): 0 | 0.5 | 1 {
   return (result === "1-0") === (jevColor === "w") ? 1 : 0;
 }
 
-// Brief facts for the viewer: the chosen move and the top alternatives Jev weighed.
-function jevPlyData(decision: JevDecision, facts: MoveFacts[], before: ReturnType<typeof positionSnapshot>, recall?: Recall) {
+// An opening move to try instead of Jev's top pick, or null to play the pick: any other option that doesn't lose material.
+export function exploreOpening(explore: RunnerDeps["explore"], plyCount: number, picked: string, facts: MoveFacts[]) {
+  if (!explore || plyCount >= explore.plies) return null;
+  const random = explore.random ?? Math.random;
+  if (random() >= explore.rate) return null;
+  const others = facts.filter((f) => f.san !== picked && f.netGain >= 0);
+  return others.length ? others[Math.floor(random() * others.length)]! : null;
+}
+
+// Brief facts for the viewer: the chosen move and the top alternatives Jev weighed, plus the move it tried instead, if any.
+function jevPlyData(decision: JevDecision, facts: MoveFacts[], before: ReturnType<typeof positionSnapshot>, recall?: Recall, explored?: string) {
   const bySan = new Map(facts.map((f) => [f.san, f]));
-  const top = decision.options.slice(0, 6).map((o) => {
+  const shown = decision.options.slice(0, 6);
+  const extra = explored && !shown.some((o) => o.san === explored) ? decision.options.find((o) => o.san === explored) : undefined;
+  const top = [...shown, ...(extra ? [extra] : [])].map((o) => {
     const f = bySan.get(o.san);
     return { san: o.san, uci: o.uci, p: o.p, tags: f?.tags ?? [] };
   });
   const remembered = recall && (Object.keys(recall.history).length || Object.keys(recall.openings).length) ? recall : undefined;
-  return { confidence: decision.confidence, legal: decision.options.length, top, before, resign: decision.resign, remembered, latencyMs: decision.latencyMs, tokens: decision.inputTokens, model: decision.model };
+  return { confidence: decision.confidence, legal: decision.options.length, top, before, resign: decision.resign, remembered, latencyMs: decision.latencyMs, tokens: decision.inputTokens, model: decision.model, ...(explored ? { explored: true } : {}) };
 }
 
 // How ready each side was to resign on its previous turn.
@@ -185,7 +201,9 @@ export async function tick(deps: RunnerDeps): Promise<TickResult> {
         ladder.jevCalls += 1;
         ladder.jevTokens += decision.inputTokens;
         resigns = shouldResign("jev", decision.resign, lastReading(plies, "jev"), plies.length);
-        ply = { gameId: game.id, ply: plies.length, side: "jev", san: decision.san, uci: decision.uci, data: jevPlyData(decision, facts, before, recall) };
+        const explored = exploreOpening(deps.explore, plies.length, decision.san, facts);
+        const played = explored ?? decision;
+        ply = { gameId: game.id, ply: plies.length, side: "jev", san: played.san, uci: played.uci, data: jevPlyData(decision, facts, before, recall, explored?.san) };
       } else {
         const move = await deps.opponent({ fen: chess.fen(), historyUci: plies.map((p) => p.uci), elo: game.oppElo, jevElo: Math.round(ladder.rating) });
         const san = chess.move(move.uci).san;

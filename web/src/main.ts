@@ -21,6 +21,8 @@ interface JevData {
   resign?: number;
   /** What Jev was reminded of, per move (SAN): kinds of move that often went wrong, and its opening record. */
   remembered?: { history: Record<string, string>; openings: Record<string, string> };
+  /** Jev played one of its other options to learn about this opening, instead of its top pick. */
+  explored?: boolean;
   latencyMs: number;
   tokens: number;
 }
@@ -285,7 +287,10 @@ function renderMind(ply: Ply | undefined, thinking: boolean) {
     san.textContent = "Choosing…";
   } else {
     san.innerHTML = figurine(ply.san, mover);
-    $("move-chips").innerHTML = tagChips(chosen?.tags, mover);
+    const exploring = d.explored
+      ? `<li class="chip explore" title="Jev tried one of its other options instead of its top pick, to learn how this opening goes">Exploring</li>`
+      : "";
+    $("move-chips").innerHTML = exploring + tagChips(chosen?.tags, mover);
   }
   if (d.before) {
     const threats = d.before.threatened

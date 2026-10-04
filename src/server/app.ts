@@ -64,6 +64,8 @@ export async function handleApi(request: Request, config: AppConfig): Promise<Re
       plyIntervalMs: 3_000,
       // Matches THINK_MS in web/src/main.ts, so Maia replies 3 seconds after Jev's piece moves.
       jevThinkMs: 2_200,
+      // Jev's first four moves: one in seven tries another option, so its opening records cover more than one line.
+      explore: { rate: 0.15, plies: 8 },
       gameGapMs: 12_000,
       maxAheadMs: 60_000,
     });

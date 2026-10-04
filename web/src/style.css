@@ -644,6 +644,10 @@ button:focus-visible {
   background: color-mix(in srgb, var(--jev) 22%, transparent);
   color: color-mix(in srgb, var(--jev) 70%, var(--ink));
 }
+.chip.explore {
+  background: var(--jev-wash);
+  color: var(--jev);
+}
 .chip.quiet {
   color: var(--ink-soft);
 }

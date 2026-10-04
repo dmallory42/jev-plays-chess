@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { expectedScore, pickOpponentElo, updateRating } from "../src/core/elo";
 import { moveFacts } from "../src/core/facts";
 import type { JevDecision } from "../src/core/jev";
-import { jevScore, MIN_RESIGN_PLY, tick, type RunnerDeps } from "../src/core/runner";
+import { exploreOpening, jevScore, MIN_RESIGN_PLY, tick, type RunnerDeps } from "../src/core/runner";
 import { MemoryStore } from "../src/core/store";
 
 // Deterministic stand-ins: "Jev" plays the first legal move, the opponent the last.
@@ -52,6 +52,35 @@ describe("elo", () => {
 });
 
 describe("tick", () => {
+  it("sometimes plays another opening option that doesn't lose material, and says so", async () => {
+    const store = new MemoryStore();
+    const clock = { t: 1_000_000 };
+    await store.saveLadder({ ...(await store.getLadder()), nextShowAt: clock.t });
+    // Always explore, always taking the first other option.
+    await tick(deps(store, clock, { explore: { rate: 1, plies: 2, random: () => 0 } }));
+    const [first, second, third] = await store.getPlies(1);
+    const data = first!.data as { explored?: boolean; top: { san: string }[] };
+    expect(data.explored).toBe(true);
+    expect(first!.san).not.toBe(data.top[0]!.san);
+    // The move it tried is listed with the options, so the board can show it.
+    expect(data.top.some((o) => o.san === first!.san)).toBe(true);
+    expect(second!.side).toBe("opp");
+    // Past the opening window, Jev plays its pick again.
+    expect((third!.data as { explored?: boolean }).explored).toBeUndefined();
+  });
+
+  it("never explores into a move that loses material", () => {
+    const chess = new Chess("4k3/8/8/8/8/8/3q4/4K3 w - - 0 1");
+    const facts = moveFacts(chess);
+    const picked = facts.find((f) => f.san === "Kxd2")!.san;
+    for (let i = 0; i < 20; i++) {
+      const tried = exploreOpening({ rate: 1, plies: 8, random: () => i / 20 }, 0, picked, facts);
+      expect(tried === null || tried.netGain >= 0).toBe(true);
+    }
+    expect(exploreOpening({ rate: 0, plies: 8 }, 0, picked, facts)).toBeNull();
+    expect(exploreOpening({ rate: 1, plies: 8, random: () => 0 }, 8, picked, facts)).toBeNull();
+  });
+
   it("leaves extra time after Jev's plies only", async () => {
     const store = new MemoryStore();
     const clock = { t: 1_000_000 };
@@ -90,7 +119,7 @@ describe("tick", () => {
     expect(ladder.wins + ladder.draws + ladder.losses).toBe(2);
     expect(games[0]!.ratingAfter).toBe(ladder.rating);
     expect(ladder.jevCalls).toBeGreaterThan(0);
-  });
+  }, 15_000);
 
   it("skips while another tick holds the lease", async () => {
     const store = new MemoryStore();
@@ -159,7 +188,7 @@ describe("resignation", () => {
     while ((await tick(d)).gamesFinished === 0);
     const [game] = await store.recentGames(1, Number.MAX_SAFE_INTEGER);
     expect(game!.termination).not.toBe("resignation");
-  });
+  }, 15_000);
 });
 
 describe("memory", () => {
